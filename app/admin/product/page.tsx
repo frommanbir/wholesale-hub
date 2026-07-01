@@ -10,5 +10,8 @@ export default async function AdminProductsPage() {
         getColors(),
     ]);
 
-    return <ProductsClient initialProducts={products as any} colors={colors} />;
+    // Serialize Decimal/Date objects to plain JSON-compatible types
+    const serializedProducts = JSON.parse(JSON.stringify(products));
+
+    return <ProductsClient initialProducts={serializedProducts} colors={colors} />;
 }

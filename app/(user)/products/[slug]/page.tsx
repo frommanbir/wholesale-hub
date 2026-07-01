@@ -100,7 +100,7 @@ export default async function ProductDetailPage({ params }: Props) {
                         </div>
 
                         {/* Description */}
-                        <p className="text-sm text-gray-600 leading-relaxed">
+                        <p className="text-sm text-gray-600 leading-relaxed text-justify">
                             {product.description}
                         </p>
 

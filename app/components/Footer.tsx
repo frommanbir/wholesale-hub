@@ -37,7 +37,15 @@ export default async function Footer() {
             <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                 {/* Logo */}
                 <Link href="/" className="block">
-                    <WholesaleHubLogo siteName={settings?.siteName} />
+                    {settings?.logo ? (
+                        <img
+                            src={settings.logo}
+                            alt={settings.siteName}
+                            className="h-9 object-contain"
+                        />
+                    ) : (
+                        <WholesaleHubLogo siteName={settings?.siteName} />
+                    )}
                 </Link>
 
                 {/* Social Icons */}

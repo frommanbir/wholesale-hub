@@ -9,10 +9,12 @@ export default async function AdminSettingsPage() {
         getHomepageSettings(),
     ]);
 
+    const serializedSettings = settings ? JSON.parse(JSON.stringify(settings)) : null;
+
     return (
         <div>
             <h1 className="text-2xl font-bold mb-6">Settings</h1>
-            <SettingsClient settings={settings} homepage={homepage} />
+            <SettingsClient settings={serializedSettings} homepage={homepage} />
         </div>
     );
 }

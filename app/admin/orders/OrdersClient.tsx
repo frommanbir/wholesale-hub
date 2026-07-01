@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import OrderStatusSelect from "./OrderStatusSelect";
 
 type OrderItem = {
@@ -47,150 +47,277 @@ export default function OrdersClient({ orders }: Props) {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const itemsPerPage = 10;
 
-    const totalPages = Math.ceil(orders.length / itemsPerPage);
+    // Search and Filter States
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [sortBy, setSortBy] = useState("newest");
+
+    // Reset page to 1 when filters or search change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, sortBy]);
+
+    // Derived Filtered and Sorted Orders List
+    const filteredOrders = orders
+        .filter((o) => {
+            const term = searchTerm.toLowerCase();
+            const orderNumMatch = o.orderNumber.toLowerCase().includes(term);
+            const customerMatch = o.customerName.toLowerCase().includes(term);
+            const phoneMatch = o.phone.toLowerCase().includes(term);
+            const addressMatch = o.address.toLowerCase().includes(term);
+            const itemsMatch = o.orderItems?.some((item) =>
+                item.product?.name?.toLowerCase().includes(term)
+            ) ?? false;
+
+            const matchesSearch =
+                orderNumMatch ||
+                customerMatch ||
+                phoneMatch ||
+                addressMatch ||
+                itemsMatch;
+
+            const matchesStatus =
+                statusFilter === "all" ||
+                o.status.toLowerCase() === statusFilter.toLowerCase();
+
+            return matchesSearch && matchesStatus;
+        })
+        .sort((a, b) => {
+            switch (sortBy) {
+                case "oldest":
+                    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                case "total-desc":
+                    return Number(b.total) - Number(a.total);
+                case "total-asc":
+                    return Number(a.total) - Number(b.total);
+                case "newest":
+                default:
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+        });
+
+    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
     const activePage = Math.min(currentPage, Math.max(totalPages, 1));
-    const paginatedOrders = orders.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage);
+    const paginatedOrders = filteredOrders.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage);
 
     return (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th className="text-left px-4 py-3 w-12">S.N.</th>
-                            <th className="text-left px-4 py-3">Order #</th>
-                            <th className="text-left px-4 py-3">Customer</th>
-                            <th className="text-left px-4 py-3">Phone</th>
-                            <th className="text-left px-4 py-3">Product</th>
-                            <th className="text-left px-4 py-3">Color</th>
-                            <th className="text-left px-4 py-3">Qty</th>
-                            <th className="text-left px-4 py-3">Total</th>
-                            <th className="text-left px-4 py-3">Status</th>
-                            <th className="text-left px-4 py-3">Date</th>
-                            <th className="text-left px-4 py-3">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paginatedOrders.map((o, idx) => {
-                            const serialNumber = (activePage - 1) * itemsPerPage + idx + 1;
-                            const totalQty = o.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-                            return (
-                                <tr key={o.id} className="border-t border-gray-100 hover:bg-gray-50/50">
-                                    <td className="px-4 py-3 text-gray-500 font-medium">{serialNumber}</td>
-                                    <td className="px-4 py-3 font-mono text-xs">{o.orderNumber}</td>
-                                    <td className="px-4 py-3 font-medium">{o.customerName}</td>
-                                    <td className="px-4 py-3">{o.phone}</td>
-                                    <td className="px-4 py-3 max-w-[150px] truncate">{o.orderItems?.[0]?.product?.name || "—"}</td>
-                                    <td className="px-4 py-3">
-                                        {o.orderItems?.[0]?.color ? (
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: o.orderItems[0].color.hexCode }} />
-                                                <span className="text-xs text-gray-600">{o.orderItems[0].color.name}</span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-gray-400 text-xs">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 font-medium">{totalQty}</td>
-                                    <td className="px-4 py-3">Rs. {Number(o.total).toLocaleString()}</td>
-                                    <td className="px-4 py-3">
-                                        <OrderStatusSelect id={o.id} currentStatus={o.status} />
-                                    </td>
-                                    <td className="px-4 py-3 text-xs text-gray-500">
-                                        {new Date(o.createdAt).toLocaleDateString()}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <button
-                                            onClick={() => setSelectedOrder(o)}
-                                            className="text-gray-600 hover:text-black font-semibold transition text-xs cursor-pointer"
-                                        >
-                                            View
-                                        </button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-
-            {orders.length === 0 && (
-                <p className="text-center text-gray-400 py-10">No orders yet.</p>
-            )}
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 bg-white">
-                    <div className="flex-1 flex justify-between sm:hidden">
+        <div className="flex flex-col gap-4">
+            {/* Search and Filters Control Panel */}
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {/* Search Input */}
+                <div className="flex-1 max-w-md relative">
+                    <input
+                        type="text"
+                        placeholder="Search by order #, customer, phone, address..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm outline-none focus:border-black transition duration-150"
+                    />
+                    <svg
+                        className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                    </svg>
+                    {searchTerm && (
                         <button
-                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                            disabled={activePage === 1}
-                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+                            onClick={() => setSearchTerm("")}
+                            className="absolute right-3 top-2 text-gray-400 hover:text-black text-sm font-medium"
                         >
-                            Previous
+                            Clear
                         </button>
-                        <button
-                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                            disabled={activePage === totalPages}
-                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+                    )}
+                </div>
+
+                {/* Filter and Sort Dropdowns */}
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Status Filter */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500 font-medium">Status:</span>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none bg-white focus:border-black cursor-pointer"
                         >
-                            Next
-                        </button>
+                            <option value="all">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
                     </div>
-                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                        <div>
-                            <p className="text-xs text-gray-700">
-                                Showing{" "}
-                                <span className="font-semibold">
-                                    {(activePage - 1) * itemsPerPage + 1}
-                                </span>{" "}
-                                to{" "}
-                                <span className="font-semibold">
-                                    {Math.min(activePage * itemsPerPage, orders.length)}
-                                </span>{" "}
-                                of <span className="font-semibold">{orders.length}</span> results
-                            </p>
-                        </div>
-                        <div>
-                            <nav className="relative z-0 inline-flex rounded-md shadow-xs -space-x-px" aria-label="Pagination">
-                                <button
-                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                                    disabled={activePage === 1}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition"
-                                >
-                                    <span className="sr-only">Previous</span>
-                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                                {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`relative inline-flex items-center px-4 py-2 border text-xs font-medium transition ${
-                                            page === activePage
-                                                ? "z-10 bg-black border-black text-white"
-                                                : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                                        }`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                                    disabled={activePage === totalPages}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition"
-                                >
-                                    <span className="sr-only">Next</span>
-                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                            </nav>
-                        </div>
+
+                    {/* Sort By */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500 font-medium">Sort:</span>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none bg-white focus:border-black cursor-pointer"
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="total-desc">Total: High to Low</option>
+                            <option value="total-asc">Total: Low to High</option>
+                        </select>
                     </div>
                 </div>
-            )}
+            </div>
+
+            {/* Results metadata label */}
+            <div className="text-xs text-gray-500">
+                Found {filteredOrders.length} {filteredOrders.length === 1 ? "order" : "orders"}
+                {(searchTerm || statusFilter !== "all") && " matching active filters"}
+            </div>
+
+            {/* Table Container */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col border border-gray-100">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th className="text-left px-4 py-3 w-12">S.N.</th>
+                                <th className="text-left px-4 py-3">Order #</th>
+                                <th className="text-left px-4 py-3">Customer</th>
+                                <th className="text-left px-4 py-3">Phone</th>
+                                <th className="text-left px-4 py-3">Product</th>
+                                <th className="text-left px-4 py-3">Color</th>
+                                <th className="text-left px-4 py-3">Qty</th>
+                                <th className="text-left px-4 py-3">Total</th>
+                                <th className="text-left px-4 py-3">Status</th>
+                                <th className="text-left px-4 py-3">Date</th>
+                                <th className="text-left px-4 py-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginatedOrders.map((o, idx) => {
+                                const serialNumber = (activePage - 1) * itemsPerPage + idx + 1;
+                                const totalQty = o.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+                                return (
+                                    <tr key={o.id} className="border-t border-gray-100 hover:bg-gray-50/50">
+                                        <td className="px-4 py-3 text-gray-500 font-medium">{serialNumber}</td>
+                                        <td className="px-4 py-3 font-mono text-xs">{o.orderNumber}</td>
+                                        <td className="px-4 py-3 font-medium">{o.customerName}</td>
+                                        <td className="px-4 py-3">{o.phone}</td>
+                                        <td className="px-4 py-3 max-w-[150px] truncate">{o.orderItems?.[0]?.product?.name || "—"}</td>
+                                        <td className="px-4 py-3">
+                                            {o.orderItems?.[0]?.color ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: o.orderItems[0].color.hexCode }} />
+                                                    <span className="text-xs text-gray-600">{o.orderItems[0].color.name}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 font-medium">{totalQty}</td>
+                                        <td className="px-4 py-3">Rs. {Number(o.total).toLocaleString()}</td>
+                                        <td className="px-4 py-3">
+                                            <OrderStatusSelect id={o.id} currentStatus={o.status} />
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-gray-500">
+                                            {new Date(o.createdAt).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <button
+                                                onClick={() => setSelectedOrder(o)}
+                                                className="text-gray-600 hover:text-black font-semibold transition text-xs cursor-pointer"
+                                            >
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                {filteredOrders.length === 0 && (
+                    <p className="text-center text-gray-400 py-10">No orders found.</p>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 bg-white">
+                        <div className="flex-1 flex justify-between sm:hidden">
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                disabled={activePage === 1}
+                                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                disabled={activePage === totalPages}
+                                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+                            >
+                                Next
+                            </button>
+                        </div>
+                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-xs text-gray-700">
+                                    Showing{" "}
+                                    <span className="font-semibold">
+                                        {(activePage - 1) * itemsPerPage + 1}
+                                    </span>{" "}
+                                    to{" "}
+                                    <span className="font-semibold">
+                                        {Math.min(activePage * itemsPerPage, filteredOrders.length)}
+                                    </span>{" "}
+                                    of <span className="font-semibold">{filteredOrders.length}</span> results
+                                </p>
+                            </div>
+                            <div>
+                                <nav className="relative z-0 inline-flex rounded-md shadow-xs -space-x-px" aria-label="Pagination">
+                                    <button
+                                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                        disabled={activePage === 1}
+                                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition"
+                                    >
+                                        <span className="sr-only">Previous</span>
+                                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`relative inline-flex items-center px-4 py-2 border text-xs font-medium transition ${
+                                                page === activePage
+                                                    ? "z-10 bg-black border-black text-white"
+                                                    : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                        disabled={activePage === totalPages}
+                                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition"
+                                    >
+                                        <span className="sr-only">Next</span>
+                                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* View Order Detail Modal */}
             {selectedOrder && (

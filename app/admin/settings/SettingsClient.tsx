@@ -46,7 +46,7 @@ function ImagePicker({ label, currentUrl, onUploaded, hint, previewClass = "h-16
     async function handleFile(file: File) {
         setError("");
         if (!file.type.startsWith("image/")) { setError("Images only."); return; }
-        if (file.size > 5 * 1024 * 1024) { setError("Max 5 MB."); return; }
+        if (file.size > 20 * 1024 * 1024) { setError("Max 20 MB."); return; }
 
         setUploading(true);
         const fd = new FormData();
@@ -195,9 +195,9 @@ export default function SettingsClient({
                     {/* Text fields */}
                     {[
                         { label: "Site Name", key: "siteName" },
-                        { label: "Email", key: "email" },
-                        { label: "Phone", key: "phone" },
-                        { label: "Address", key: "address" },
+                        // { label: "Email", key: "email" },
+                        // { label: "Phone", key: "phone" },
+                        // { label: "Address", key: "address" },
                         { label: "Shipping Charge (Rs.)", key: "shippingCharge" },
                         { label: "Facebook URL", key: "facebook" },
                         { label: "Instagram URL", key: "instagram" },

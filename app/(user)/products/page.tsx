@@ -1,6 +1,6 @@
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import ProductCard from "../../components/ProductCard";
+import ProductsListClient from "./ProductsListClient";
 import { getProducts } from "../../actions/product";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,7 @@ export const metadata = {
 
 export default async function ProductsPage() {
     const products = await getProducts();
+    const serializedProducts = JSON.parse(JSON.stringify(products));
 
     return (
         <div className="flex flex-col min-h-screen bg-white">
@@ -27,31 +28,11 @@ export default async function ProductsPage() {
                     </p>
                     <h1 className="text-3xl font-semibold text-gray-900">Our Collections</h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        Showing {products.length} high-quality wholesale products.
+                        Explore our premium wholesale sarees and clothing range.
                     </p>
                 </div>
 
-                {/* Products Grid */}
-                {products.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {products.map((product, i) => (
-                            <ProductCard
-                                key={product.id}
-                                name={product.name}
-                                slug={product.slug}
-                                image={product.image}
-                                price={product.price.toString()}
-                                discount={product.discount?.toString() ?? "0"}
-                                rating={i % 3 === 1 ? 5 : 4}
-                                reviewCount={100 + i * 12 + 3}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-20 border border-dashed border-gray-200 rounded-lg">
-                        <p className="text-gray-400 text-sm">No products found in our collections.</p>
-                    </div>
-                )}
+                <ProductsListClient initialProducts={serializedProducts} />
             </main>
 
             <Footer />

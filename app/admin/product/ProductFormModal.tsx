@@ -127,8 +127,8 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
             setUploadError("Only image files are allowed.");
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-            setUploadError("Image must be under 5 MB.");
+        if (file.size > 20 * 1024 * 1024) {
+            setUploadError("Image must be under 20 MB.");
             return;
         }
 
