@@ -15,7 +15,7 @@ export async function setSession(user: SessionUser) {
   const value = Buffer.from(JSON.stringify(user)).toString("base64");
   cookieStore.set(COOKIE_NAME, value, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // Set to true only when hosting on HTTPS
     sameSite: "lax",
     maxAge: COOKIE_MAX_AGE,
     path: "/",

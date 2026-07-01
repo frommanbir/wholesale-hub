@@ -4,7 +4,7 @@ module.exports = {
       name: "wholesale-hub",
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3021 -H 0.0.0.0",
-      instances: "1",
+      instances: 1,
       exec_mode: "fork",
       autorestart: true,
       watch: false,
