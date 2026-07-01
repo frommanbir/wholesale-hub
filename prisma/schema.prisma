@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  password  String
+  address   String
+  role      String   @default("customer")  // "customer" or "admin"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Product {
+  id            Int            @id @default(autoincrement())
+  name          String
+  slug          String         @unique
+  description   String         @db.Text
+  price         Decimal        @db.Decimal(10, 2)
+  discount      Decimal        @db.Decimal(10, 2) @default(0)
+  stock         Int
+  status        Boolean        @default(true)
+  image         String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  productColors ProductColor[]
+  orderItems    OrderItem[]
+}
+
+model Color {
+  id            Int            @id @default(autoincrement())
+  name          String
+  hexCode       String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  productColors ProductColor[]
+  orderItems    OrderItem[]
+}
+
+model ProductColor {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  colorId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id])
+  color     Color    @relation(fields: [colorId], references: [id])
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  orderNumber    String      @unique
+  customerName   String
+  phone          String
+  address        String
+  subtotal       Decimal     @db.Decimal(10, 2)
+  shippingCharge Decimal     @db.Decimal(10, 2)
+  total          Decimal     @db.Decimal(10, 2)
+  paymentMethod  String      @default("Cash on Delivery")
+  status         String      @default("pending")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  userId         Int?
+  user           User?       @relation(fields: [userId], references: [id])
+  orderItems     OrderItem[]
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  colorId   Int?
+  quantity  Int
+  price     Decimal  @db.Decimal(10, 2)
+  total     Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  color     Color?   @relation(fields: [colorId], references: [id])
+}
+
+model Setting {
+  id             Int      @id @default(autoincrement())
+  siteName       String
+  email          String
+  phone          String
+  address        String
+  shippingCharge Decimal  @db.Decimal(10, 2) @default(0)
+  logo           String?
+  favicon        String?
+  facebook       String?
+  instagram      String?
+  twitter        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model HomepageSetting {
+  id         Int      @id @default(autoincrement())
+  title      String
+  subtitle   String
+  buttonText String
+  buttonLink String
+  image      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
