@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Ensure public/uploads exists
-        const uploadDir = path.join(process.cwd(), "public", "uploads");
+        // Ensure root-level uploads directory exists
+        const uploadDir = path.join(process.cwd(), "uploads");
         await mkdir(uploadDir, { recursive: true });
 
         // Safe unique filename: timestamp + random + original extension

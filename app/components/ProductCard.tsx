@@ -58,7 +58,7 @@ export default function ProductCard({
             <div className="pt-2 pb-2">
                 {/* Name */}
                 <Link href={`/products/${slug}`} className="block">
-                    <p className="text-sm text-gray-800 truncate hover:underline">{name}</p>
+                    <p className="text-sm text-gray-800 line-clamp-2 truncate hover:underline">{name}</p>
                 </Link>
 
                 {/* Price */}
