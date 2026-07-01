@@ -3,6 +3,8 @@ import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
 import { getProducts } from "../../actions/product";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
     title: "All Collections — Wholesale Hub",
     description: "Explore our premium wholesale sarees and apparel collection.",

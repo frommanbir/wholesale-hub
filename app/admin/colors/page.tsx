@@ -1,6 +1,8 @@
 import { getColors } from "../../actions/color";
 import ColorsClient from "./ColorsClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminColorsPage() {
     const colors = await getColors();
 

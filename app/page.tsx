@@ -5,6 +5,8 @@ import ProductCard from "./components/ProductCard";
 import { getProducts } from "./actions/product";
 import { getHomepageSettings } from "./actions/settings";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
     title: "Wholesale Hub — Premium Wholesale Products",
     description: "Discover high-quality wholesale sarees and clothing at competitive prices. Supply retailers, boutiques and distributors.",

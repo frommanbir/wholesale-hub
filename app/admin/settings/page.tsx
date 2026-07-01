@@ -1,6 +1,8 @@
 import { getSettings, getHomepageSettings } from "../../actions/settings";
 import SettingsClient from "./SettingsClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminSettingsPage() {
     const [settings, homepage] = await Promise.all([
         getSettings(),

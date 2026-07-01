@@ -2,6 +2,8 @@ import { getAllProducts } from "../../actions/product";
 import { getColors } from "../../actions/color";
 import ProductsClient from "./ProductsClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminProductsPage() {
     const [products, colors] = await Promise.all([
         getAllProducts(),

@@ -1,6 +1,8 @@
 import { getContacts } from "../../actions/contact";
 import ContactsClient from "./ContactsClient";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
     title: "Wholesale partner Inquiries — Admin Panel",
 };

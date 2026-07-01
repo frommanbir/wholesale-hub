@@ -61,6 +61,8 @@ export default function OrdersClient({ orders }: Props) {
                             <th className="text-left px-4 py-3">Order #</th>
                             <th className="text-left px-4 py-3">Customer</th>
                             <th className="text-left px-4 py-3">Phone</th>
+                            <th className="text-left px-4 py-3">Product</th>
+                            <th className="text-left px-4 py-3">Color</th>
                             <th className="text-left px-4 py-3">Qty</th>
                             <th className="text-left px-4 py-3">Total</th>
                             <th className="text-left px-4 py-3">Status</th>
@@ -78,6 +80,17 @@ export default function OrdersClient({ orders }: Props) {
                                     <td className="px-4 py-3 font-mono text-xs">{o.orderNumber}</td>
                                     <td className="px-4 py-3 font-medium">{o.customerName}</td>
                                     <td className="px-4 py-3">{o.phone}</td>
+                                    <td className="px-4 py-3 max-w-[150px] truncate">{o.orderItems?.[0]?.product?.name || "—"}</td>
+                                    <td className="px-4 py-3">
+                                        {o.orderItems?.[0]?.color ? (
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: o.orderItems[0].color.hexCode }} />
+                                                <span className="text-xs text-gray-600">{o.orderItems[0].color.name}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 text-xs">—</span>
+                                        )}
+                                    </td>
                                     <td className="px-4 py-3 font-medium">{totalQty}</td>
                                     <td className="px-4 py-3">Rs. {Number(o.total).toLocaleString()}</td>
                                     <td className="px-4 py-3">
