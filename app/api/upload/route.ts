@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import sharp from "sharp";
 
 export async function POST(req: NextRequest) {
     try {
@@ -28,12 +29,24 @@ export async function POST(req: NextRequest) {
         const uploadDir = path.join(process.cwd(), "uploads");
         await mkdir(uploadDir, { recursive: true });
 
-        // Safe unique filename: timestamp + random + original extension
-        const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-        const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const filePath = path.join(uploadDir, safeName);
+        // Compress and convert image to WebP using sharp with fallback
+        let optimizedBuffer: Buffer;
+        let safeName: string;
+        try {
+            optimizedBuffer = await sharp(buffer)
+                .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
+                .webp({ quality: 80 })
+                .toBuffer();
+            safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
+        } catch (sharpError) {
+            console.warn("Sharp optimization failed, using original format:", sharpError);
+            optimizedBuffer = buffer;
+            const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+            safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        }
 
-        await writeFile(filePath, buffer);
+        const filePath = path.join(uploadDir, safeName);
+        await writeFile(filePath, optimizedBuffer);
 
         return NextResponse.json({ url: `/uploads/${safeName}` });
     } catch (err) {

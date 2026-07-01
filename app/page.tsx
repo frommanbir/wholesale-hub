@@ -31,7 +31,7 @@ export default async function HomePage() {
                 }}
             >
                 {/* Dark scrim */}
-                <div className="absolute inset-0 bg-black/55" />
+                <div className="absolute inset-0 bg-black/20" />
 
                 <div className="relative z-10 max-w-xl mx-auto px-6 py-20">
                     <h1 className="text-3xl sm:text-4xl font-bold leading-tight mb-4">
@@ -43,7 +43,7 @@ export default async function HomePage() {
                     </p>
                     <div className="flex gap-3 justify-center flex-wrap">
                         <a
-                            href={"/products"}
+                            href="#collections"
                             className="border border-white/90 text-white text-sm px-5 py-2 rounded-full hover:bg-white hover:text-gray-900 transition-colors duration-200"
                         >
                             {hero?.buttonText ?? "Explore Collection"}
@@ -59,7 +59,7 @@ export default async function HomePage() {
             </section>
 
             {/* ── Our Collections ──────────────────────────────────── */}
-            <section className="max-w-6xl mx-auto px-4 py-14 w-full">
+            <section id="collections" className="max-w-6xl mx-auto px-4 py-14 w-full scroll-mt-20">
                 <h2 className="text-2xl font-semibold text-center text-gray-900 mb-8">
                     Our Collections
                 </h2>
@@ -144,7 +144,7 @@ export default async function HomePage() {
                         Partner with us for quality wholesale sarees and effortless ordering
                     </p>
                     <Link
-                        href="/products"
+                        href="/#collections"
                         className="group inline-flex items-center justify-center bg-white text-gray-900 text-sm font-medium px-8 py-3 rounded-full hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-md hover:shadow-lg gap-2"
                     >
                         <span>Place Wholesale Order</span>

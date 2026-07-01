@@ -49,10 +49,14 @@ export default function WholesalePartnerForm() {
             {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
             <div>
-                <label className="text-xs text-gray-500 mb-1 block font-medium">Full Name*</label>
+                <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs text-gray-500 block font-medium">Full Name*</label>
+                    <span className="text-[10px] text-gray-400">{name.length} / 100</span>
+                </div>
                 <input
                     required
                     type="text"
+                    maxLength={100}
                     placeholder="Your Full Name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -61,10 +65,14 @@ export default function WholesalePartnerForm() {
             </div>
 
             <div>
-                <label className="text-xs text-gray-500 mb-1 block font-medium">Contact Number*</label>
+                <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs text-gray-500 block font-medium">Contact Number*</label>
+                    <span className="text-[10px] text-gray-400">{phone.length} / 20</span>
+                </div>
                 <input
                     required
                     type="tel"
+                    maxLength={20}
                     placeholder="Your Phone Number"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -73,10 +81,14 @@ export default function WholesalePartnerForm() {
             </div>
 
             <div>
-                <label className="text-xs text-gray-500 mb-1 block font-medium">Business / Shop Address*</label>
+                <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs text-gray-500 block font-medium">Business / Shop Address*</label>
+                    <span className="text-[10px] text-gray-400">{address.length} / 500</span>
+                </div>
                 <textarea
                     required
                     rows={3}
+                    maxLength={500}
                     placeholder="Full Address"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
@@ -87,7 +99,7 @@ export default function WholesalePartnerForm() {
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-black text-white py-3 rounded-lg text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50 mt-2"
+                className="w-full bg-black text-white py-3 rounded-lg text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50 mt-2 cursor-pointer"
             >
                 {loading ? "Submitting Inquiry..." : "Submit Inquiry"}
             </button>

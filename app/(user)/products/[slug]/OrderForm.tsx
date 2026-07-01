@@ -141,36 +141,59 @@ export default function OrderForm({ productId, price, shippingCharge, colors }: 
                     </div>
 
                     {/* Customer Info Form */}
-                    <form onSubmit={handleSubmit} className="space-y-2 border-t border-gray-100 pt-3">
-                        <input
-                            required
-                            type="text"
-                            placeholder="Full Name*"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm outline-none focus:border-gray-500 placeholder:text-gray-400"
-                        />
-                        <input
-                            required
-                            type="tel"
-                            placeholder="Phone Number*"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm outline-none focus:border-gray-500 placeholder:text-gray-400"
-                        />
-                        <input
-                            required
-                            type="text"
-                            placeholder="Address*"
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm outline-none focus:border-gray-500 placeholder:text-gray-400"
-                        />
+                    <form onSubmit={handleSubmit} className="space-y-3 border-t border-gray-100 pt-3">
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-[10px] text-gray-450 font-medium">Full Name*</span>
+                                <span className="text-[10px] text-gray-400">{name.length} / 100</span>
+                            </div>
+                            <input
+                                required
+                                type="text"
+                                maxLength={100}
+                                placeholder="e.g. Ram Bahadur"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm outline-none focus:border-gray-500 placeholder:text-gray-400"
+                            />
+                        </div>
+                        
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-[10px] text-gray-450 font-medium">Phone Number*</span>
+                                <span className="text-[10px] text-gray-400">{phone.length} / 20</span>
+                            </div>
+                            <input
+                                required
+                                type="tel"
+                                maxLength={20}
+                                placeholder="e.g. 9812345678"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm outline-none focus:border-gray-500 placeholder:text-gray-400"
+                            />
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-[10px] text-gray-450 font-medium">Address*</span>
+                                <span className="text-[10px] text-gray-400">{address.length} / 500</span>
+                            </div>
+                            <input
+                                required
+                                type="text"
+                                maxLength={500}
+                                placeholder="e.g. New Road, Kathmandu"
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm outline-none focus:border-gray-500 placeholder:text-gray-400"
+                            />
+                        </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gray-900 text-white py-3 rounded text-sm font-medium hover:bg-black transition-colors disabled:opacity-60"
+                            className="w-full bg-gray-900 text-white py-3 rounded text-sm cursor-pointer font-medium hover:bg-black transition-colors disabled:opacity-60 mt-1"
                         >
                             {loading ? "Placing Order..." : "Place Order"}
                         </button>

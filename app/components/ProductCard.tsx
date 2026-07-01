@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 type Props = {
   name: string;
@@ -48,13 +49,15 @@ export default function ProductCard({
       {/* Image — 3:4 portrait ratio */}
       <Link
         href={`/products/${slug}`}
-        className="block overflow-hidden bg-gray-100"
+        className="block overflow-hidden bg-gray-100 relative"
         style={{ aspectRatio: "3/4" }}
       >
-        <img
+        <Image
           src={image}
           alt={name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </Link>
 

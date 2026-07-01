@@ -64,7 +64,7 @@ function ImagePicker({ label, currentUrl, onUploaded, hint, previewClass = "h-16
             <label className="text-xs text-gray-500 mb-1 block">{label}</label>
             {hint && <p className="text-[11px] text-gray-400 mb-1">{hint}</p>}
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 {/* Thumbnail preview */}
                 {currentUrl ? (
                     <img
@@ -194,26 +194,35 @@ export default function SettingsClient({
 
                     {/* Text fields */}
                     {[
-                        { label: "Site Name", key: "siteName" },
-                        // { label: "Email", key: "email" },
-                        // { label: "Phone", key: "phone" },
-                        // { label: "Address", key: "address" },
-                        { label: "Shipping Charge (Rs.)", key: "shippingCharge" },
-                        { label: "Facebook URL", key: "facebook" },
-                        { label: "Instagram URL", key: "instagram" },
-                        { label: "Twitter URL", key: "twitter" },
-                    ].map((f) => (
-                        <div key={f.key}>
-                            <label className="text-xs text-gray-500 mb-1 block">{f.label}</label>
-                            <input
-                                value={siteForm[f.key as keyof typeof siteForm]}
-                                onChange={(e) =>
-                                    setSiteForm((p) => ({ ...p, [f.key]: e.target.value }))
-                                }
-                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
-                            />
-                        </div>
-                    ))}
+                        { label: "Site Name", key: "siteName", max: 100 },
+                        { label: "Shipping Charge (Rs.)", key: "shippingCharge", type: "number" },
+                        { label: "Facebook URL", key: "facebook", max: 255 },
+                        { label: "Instagram URL", key: "instagram", max: 255 },
+                        { label: "Twitter URL", key: "twitter", max: 255 },
+                    ].map((f) => {
+                        const val = String(siteForm[f.key as keyof typeof siteForm] || "");
+                        return (
+                            <div key={f.key}>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs text-gray-500 block">{f.label}</label>
+                                    {f.max && (
+                                        <span className="text-[10px] text-gray-400">
+                                            {val.length} / {f.max}
+                                        </span>
+                                    )}
+                                </div>
+                                <input
+                                    type={f.type || "text"}
+                                    maxLength={f.max}
+                                    value={val}
+                                    onChange={(e) =>
+                                        setSiteForm((p) => ({ ...p, [f.key]: e.target.value }))
+                                    }
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
+                                />
+                            </div>
+                        );
+                    })}
 
                     {/* Logo upload */}
                     <ImagePicker
@@ -252,21 +261,32 @@ export default function SettingsClient({
 
                     {/* Text fields */}
                     {[
-                        { label: "Hero Title", key: "title" },
-                        { label: "Subtitle", key: "subtitle" },
-                        { label: "Button Text", key: "buttonText" }
-                    ].map((f) => (
-                        <div key={f.key}>
-                            <label className="text-xs text-gray-500 mb-1 block">{f.label}</label>
-                            <input
-                                value={heroForm[f.key as keyof typeof heroForm]}
-                                onChange={(e) =>
-                                    setHeroForm((p) => ({ ...p, [f.key]: e.target.value }))
-                                }
-                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
-                            />
-                        </div>
-                    ))}
+                        { label: "Hero Title", key: "title", max: 100 },
+                        { label: "Subtitle", key: "subtitle", max: 300 },
+                        { label: "Button Text", key: "buttonText", max: 30 }
+                    ].map((f) => {
+                        const val = String(heroForm[f.key as keyof typeof heroForm] || "");
+                        return (
+                            <div key={f.key}>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs text-gray-500 block">{f.label}</label>
+                                    {f.max && (
+                                        <span className="text-[10px] text-gray-400">
+                                            {val.length} / {f.max}
+                                        </span>
+                                    )}
+                                </div>
+                                <input
+                                    maxLength={f.max}
+                                    value={val}
+                                    onChange={(e) =>
+                                        setHeroForm((p) => ({ ...p, [f.key]: e.target.value }))
+                                    }
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
+                                />
+                            </div>
+                        );
+                    })}
 
                     {/* Background image upload */}
                     <ImagePicker

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import { getProductBySlug } from "../../../actions/product";
@@ -60,11 +61,14 @@ export default async function ProductDetailPage({ params }: Props) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     {/* ── Left: Product Image ────────────────── */}
-                    <div className="rounded-lg overflow-hidden bg-gray-100 aspect-[3/4]">
-                        <img
+                    <div className="rounded-lg overflow-hidden bg-gray-100 aspect-[3/4] relative">
+                        <Image
                             src={product.image}
                             alt={product.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            priority
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover"
                         />
                     </div>
 

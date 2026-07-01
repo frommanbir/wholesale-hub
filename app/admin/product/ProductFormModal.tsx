@@ -231,10 +231,14 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Name */}
                     <div>
-                        <label className="text-xs text-gray-500 mb-1 block">Name</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs text-gray-500 block">Name</label>
+                            <span className="text-[10px] text-gray-400">{form.name.length} / 100</span>
+                        </div>
                         <input
                             required
                             name="name"
+                            maxLength={100}
                             value={form.name}
                             onChange={handleNameChange}
                             className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
@@ -243,10 +247,14 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
 
                     {/* Slug */}
                     <div>
-                        <label className="text-xs text-gray-500 mb-1 block">Slug</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs text-gray-500 block">Slug</label>
+                            <span className="text-[10px] text-gray-400">{form.slug.length} / 100</span>
+                        </div>
                         <input
                             required
                             name="slug"
+                            maxLength={100}
                             value={form.slug}
                             onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
                             className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black"
@@ -255,10 +263,14 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
 
                     {/* Description */}
                     <div className="sm:col-span-2">
-                        <label className="text-xs text-gray-500 mb-1 block">Description</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs text-gray-500 block">Description</label>
+                            <span className="text-[10px] text-gray-400">{form.description.length} / 1000</span>
+                        </div>
                         <textarea
                             required
                             name="description"
+                            maxLength={1000}
                             value={form.description}
                             onChange={handleChange}
                             rows={3}

@@ -31,7 +31,7 @@ export default function NotFound() {
                             Go to Homepage
                         </Link>
                         <Link
-                            href="/products"
+                            href="/#collections"
                             className="bg-white border border-gray-250 text-gray-800 text-xs font-semibold uppercase tracking-wider px-6 py-3 rounded hover:bg-gray-50 transition"
                         >
                             Browse Products

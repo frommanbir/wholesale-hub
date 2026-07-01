@@ -14,3 +14,10 @@ export async function createColor(data: { name: string; hexCode: string }) {
 export async function deleteColor(id: number) {
     return prisma.color.delete({ where: { id } });
 }
+
+export async function updateColor(id: number, data: { name: string; hexCode: string }) {
+    return prisma.color.update({
+        where: { id },
+        data,
+    });
+}

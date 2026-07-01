@@ -51,7 +51,7 @@ export default async function Navbar() {
 
                 {/* CTA Button */}
                 <Link
-                    href="/products"
+                    href="/#collections"
                     className="border border-gray-800 text-gray-800 text-sm px-4 py-1.5 rounded-full hover:bg-gray-900 hover:text-white transition-colors duration-200 whitespace-nowrap"
                 >
                     Place Wholesale Order
