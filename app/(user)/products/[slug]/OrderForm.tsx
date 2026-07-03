@@ -21,16 +21,22 @@ export default function OrderForm({ productId, price, shippingCharge, colors }: 
     const [address, setAddress] = useState("");
     const [loading, setLoading] = useState(false);
     const [orderNumber, setOrderNumber] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const subtotal = price * quantity;
     const total = subtotal + shippingCharge;
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+        if (phone.length !== 10) {
+            setError("Phone number must be exactly 10 digits");
+            return;
+        }
+        setError(null);
         setLoading(true);
         const result = await placeOrder({
             customerName: name,
-            phone,
+            phone: `+977${phone}`,
             address,
             productId,
             colorId: selectedColorId,
@@ -161,17 +167,33 @@ export default function OrderForm({ productId, price, shippingCharge, colors }: 
                         <div>
                             <div className="flex justify-between items-center mb-1">
                                 <span className="text-[10px] text-gray-450 font-medium">Phone Number*</span>
-                                <span className="text-[10px] text-gray-400">{phone.length} / 20</span>
                             </div>
-                            <input
-                                required
-                                type="tel"
-                                maxLength={20}
-                                placeholder="e.g. 9812345678"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm outline-none focus:border-gray-500 placeholder:text-gray-400"
-                            />
+                            <div className="flex rounded border border-gray-300 focus-within:border-gray-500 overflow-hidden bg-white">
+                                <span className="bg-gray-100 px-3 py-2.5 text-sm text-gray-500 border-r border-gray-200 select-none flex items-center font-medium">
+                                    +977
+                                </span>
+                                <input
+                                    required
+                                    type="tel"
+                                    pattern="[0-9]{10}"
+                                    title="Phone number must be exactly 10 digits"
+                                    placeholder="e.g. 9812345678"
+                                    value={phone}
+                                    onChange={(e) => {
+                                        const cleanVal = e.target.value.replace(/\D/g, "");
+                                        if (cleanVal.length <= 10) {
+                                            setPhone(cleanVal);
+                                            setError(null);
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2.5 text-sm outline-none placeholder:text-gray-400 bg-transparent"
+                                />
+                            </div>
+                            {error && (
+                                <p className="text-red-500 text-xs mt-1 font-medium">
+                                    {error}
+                                </p>
+                            )}
                         </div>
 
                         <div>
