@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 // Default inactivity timeout of 15 minutes
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; 
-const HEARTBEAT_INTERVAL = 10 * 1000; // 10 seconds
-const STALE_TAB_TIMEOUT = 60 * 1000; // 30 seconds to consider a tab dead
+const HEARTBEAT_INTERVAL = 60 * 1000; // 60 seconds
+const STALE_TAB_TIMEOUT = 240 * 1000; // 240 seconds to consider a tab dead
 
 export default function AdminSessionManager() {
   const router = useRouter();
