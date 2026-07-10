@@ -18,6 +18,9 @@ export async function getProductBySlug(slug: string) {
             productColors: {
                 include: { color: true },
             },
+            productSizes: {
+                include: { size: true },
+            },
         },
     });
 }
@@ -28,6 +31,9 @@ export async function getAllProducts() {
         include: {
             productColors: {
                 include: { color: true },
+            },
+            productSizes: {
+                include: { size: true },
             },
         },
     });
@@ -43,8 +49,9 @@ export async function createProduct(data: {
     status: boolean;
     image: string;
     colorIds?: number[];
+    sizeIds?: number[];
 }) {
-    const { colorIds, ...productData } = data;
+    const { colorIds, sizeIds, ...productData } = data;
     return prisma.product.create({
         data: {
             ...productData,
@@ -53,10 +60,18 @@ export async function createProduct(data: {
                       create: colorIds.map((colorId) => ({ colorId })),
                   }
                 : undefined,
+            productSizes: sizeIds
+                ? {
+                      create: sizeIds.map((sizeId) => ({ sizeId })),
+                  }
+                : undefined,
         },
         include: {
             productColors: {
                 include: { color: true },
+            },
+            productSizes: {
+                include: { size: true },
             },
         },
     });
@@ -78,9 +93,10 @@ export async function updateProduct(
         status: boolean;
         image: string;
         colorIds?: number[];
+        sizeIds?: number[];
     }
 ) {
-    const { colorIds, ...productData } = data;
+    const { colorIds, sizeIds, ...productData } = data;
     return prisma.product.update({
         where: { id },
         data: {
@@ -91,10 +107,19 @@ export async function updateProduct(
                       create: colorIds.map((colorId) => ({ colorId })),
                   }
                 : undefined,
+            productSizes: sizeIds
+                ? {
+                      deleteMany: {},
+                      create: sizeIds.map((sizeId) => ({ sizeId })),
+                  }
+                : undefined,
         },
         include: {
             productColors: {
                 include: { color: true },
+            },
+            productSizes: {
+                include: { size: true },
             },
         },
     });

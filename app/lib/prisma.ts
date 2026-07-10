@@ -9,6 +9,11 @@ const globalForPrisma = globalThis as unknown as {
 
 const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
 
+// Reset global cached client if it lacks the new 'size' model delegate
+if (globalForPrisma.prisma && !('size' in globalForPrisma.prisma)) {
+    globalForPrisma.prisma = undefined;
+}
+
 export const prisma =
     globalForPrisma.prisma ?? new PrismaClient({ adapter });
 

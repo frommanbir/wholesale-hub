@@ -9,6 +9,7 @@ type PlaceOrderInput = {
     address: string;
     productId: number;
     colorId: number | null;
+    sizeId: number | null;
     quantity: number;
     price: number;
     shippingCharge: number;
@@ -36,6 +37,7 @@ export async function placeOrder(data: PlaceOrderInput) {
                 create: {
                     productId: data.productId,
                     colorId: data.colorId,
+                    sizeId: data.sizeId,
                     quantity: data.quantity,
                     price: data.price,
                     total: subtotal,
@@ -55,6 +57,7 @@ export async function getOrders() {
                 include: {
                     product: true,
                     color: true,
+                    size: true,
                 },
             },
         },

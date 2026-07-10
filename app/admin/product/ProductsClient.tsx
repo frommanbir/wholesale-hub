@@ -21,12 +21,19 @@ type Color = {
     hexCode: string;
 };
 
+type Size = {
+    id: number;
+    name: string;
+};
+
 export default function ProductsClient({
     initialProducts,
     colors,
+    sizes,
 }: {
     initialProducts: Product[];
     colors: Color[];
+    sizes: Size[];
 }) {
     const [products, setProducts] = useState(initialProducts);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -211,6 +218,7 @@ export default function ProductsClient({
                 isOpen={isFormOpen}
                 product={editingProduct}
                 colors={colors}
+                sizes={sizes}
                 onClose={() => {
                     setIsFormOpen(false);
                     setEditingProduct(null);

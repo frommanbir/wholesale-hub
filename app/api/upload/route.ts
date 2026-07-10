@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import sharp from "sharp";
 
 export async function POST(req: NextRequest) {
     try {
@@ -33,6 +32,8 @@ export async function POST(req: NextRequest) {
         let optimizedBuffer: Buffer;
         let safeName: string;
         try {
+            const sharpModule = await import("sharp");
+            const sharp = sharpModule.default;
             optimizedBuffer = await sharp(buffer)
                 .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
                 .webp({ quality: 80 })

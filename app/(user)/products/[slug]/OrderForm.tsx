@@ -3,18 +3,23 @@ import { useState } from "react";
 import { placeOrder } from "../../../actions/order";
 
 type Color = { id: number; name: string; hexCode: string };
+type Size = { id: number; name: string };
 
 type Props = {
     productId: number;
     price: number;
     shippingCharge: number;
     colors: Color[];
+    sizes: Size[];
 };
 
-export default function OrderForm({ productId, price, shippingCharge, colors }: Props) {
+export default function OrderForm({ productId, price, shippingCharge, colors, sizes }: Props) {
     const [quantity, setQuantity] = useState(1);
     const [selectedColorId, setSelectedColorId] = useState<number | null>(
         colors[0]?.id ?? null
+    );
+    const [selectedSizeId, setSelectedSizeId] = useState<number | null>(
+        sizes[0]?.id ?? null
     );
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
@@ -40,6 +45,7 @@ export default function OrderForm({ productId, price, shippingCharge, colors }: 
             address,
             productId,
             colorId: selectedColorId,
+            sizeId: selectedSizeId,
             quantity,
             price,
             shippingCharge,
@@ -91,6 +97,37 @@ export default function OrderForm({ productId, price, shippingCharge, colors }: 
                                         style={{ backgroundColor: color.hexCode }}
                                     />
                                     <span>{color.name}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Available Sizes (Interactive) */}
+            {sizes.length > 0 && (
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-800">Available Sizes</span>
+                        <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">
+                            {sizes.find((s) => s.id === selectedSizeId)?.name || ""}
+                        </span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                        {sizes.map((size) => {
+                            const isSelected = selectedSizeId === size.id;
+                            return (
+                                <button
+                                    key={size.id}
+                                    type="button"
+                                    onClick={() => setSelectedSizeId(size.id)}
+                                    className={`flex items-center justify-center min-w-[40px] px-3.5 py-1.5 rounded-full border text-xs font-semibold uppercase tracking-wider transition cursor-pointer select-none ${
+                                        isSelected
+                                            ? "border-black bg-black text-white"
+                                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                    }`}
+                                >
+                                    <span>{size.name}</span>
                                 </button>
                             );
                         })}

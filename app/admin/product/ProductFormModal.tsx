@@ -8,6 +8,11 @@ type Color = {
     hexCode: string;
 };
 
+type Size = {
+    id: number;
+    name: string;
+};
+
 type Product = {
     id: number;
     name: string;
@@ -24,6 +29,12 @@ type Product = {
         colorId: number;
         color: Color;
     }[];
+    productSizes?: {
+        id: number;
+        productId: number;
+        sizeId: number;
+        size: Size;
+    }[];
 };
 
 type Props = {
@@ -32,9 +43,10 @@ type Props = {
     onSaved: (product: Product, isEdit: boolean) => void;
     product: Product | null;
     colors: Color[];
+    sizes: Size[];
 };
 
-export default function ProductFormModal({ isOpen, onClose, onSaved, product, colors }: Props) {
+export default function ProductFormModal({ isOpen, onClose, onSaved, product, colors, sizes }: Props) {
     const [form, setForm] = useState({
         name: "",
         slug: "",
@@ -46,6 +58,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
     });
 
     const [selectedColorIds, setSelectedColorIds] = useState<number[]>([]);
+    const [selectedSizeIds, setSelectedSizeIds] = useState<number[]>([]);
 
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string>("");
@@ -75,6 +88,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                 });
                 setPreview(product.image);
                 setSelectedColorIds(product.productColors?.map((pc) => pc.colorId) || []);
+                setSelectedSizeIds(product.productSizes?.map((ps) => ps.sizeId) || []);
             } else {
                 setForm({
                     name: "",
@@ -87,6 +101,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                 });
                 setPreview("");
                 setSelectedColorIds([]);
+                setSelectedSizeIds([]);
             }
         }
     }, [isOpen, product]);
@@ -184,6 +199,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                 status: form.status,
                 image: imageUrl,
                 colorIds: selectedColorIds,
+                sizeIds: selectedSizeIds,
             };
 
             // Only send slug if creating a new product or if it has actually changed
@@ -373,6 +389,44 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                             })}
                             {colors.length === 0 && (
                                 <p className="text-xs text-gray-400">No colors configured yet. Create some in the Colors dashboard.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Size Checklist */}
+                    <div className="sm:col-span-2">
+                        <label className="text-xs text-gray-500 mb-2 block font-medium">Available Sizes</label>
+                        <div className="flex flex-wrap gap-2">
+                            {sizes.map((size) => {
+                                const isSelected = selectedSizeIds.includes(size.id);
+                                return (
+                                    <button
+                                        key={size.id}
+                                        type="button"
+                                        onClick={() => {
+                                            if (isSelected) {
+                                                setSelectedSizeIds((prev) => prev.filter((id) => id !== size.id));
+                                            } else {
+                                                setSelectedSizeIds((prev) => [...prev, size.id]);
+                                            }
+                                        }}
+                                        className={`flex items-center justify-center min-w-[40px] px-3.5 py-1.5 rounded-full border text-xs font-semibold uppercase tracking-wider transition cursor-pointer select-none ${
+                                            isSelected
+                                                ? "border-black bg-black text-white"
+                                                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                        }`}
+                                    >
+                                        <span>{size.name}</span>
+                                        {isSelected && (
+                                            <svg className="w-3 h-3 text-white ml-1.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                            {sizes.length === 0 && (
+                                <p className="text-xs text-gray-400">No sizes configured yet. Create some in the Sizes dashboard.</p>
                             )}
                         </div>
                     </div>

@@ -43,6 +43,7 @@ export default async function ProductDetailPage({ params }: Props) {
     if (!product) return notFound();
 
     const colors = product.productColors.map((pc) => pc.color);
+    const sizes = product.productSizes.map((ps) => ps.size);
     const shippingCharge = Number(settings?.shippingCharge ?? 0);
 
     return (
@@ -114,6 +115,7 @@ export default async function ProductDetailPage({ params }: Props) {
                             price={Number(product.price) - Number(product.discount ?? 0)}
                             shippingCharge={shippingCharge}
                             colors={colors}
+                            sizes={sizes}
                         />
 
                         {/* Trust Badges */}

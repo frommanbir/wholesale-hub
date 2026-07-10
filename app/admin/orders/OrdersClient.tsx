@@ -6,6 +6,7 @@ type OrderItem = {
     id: number;
     productId: number;
     colorId: number | null;
+    sizeId: number | null;
     quantity: number;
     price: unknown;
     total: unknown;
@@ -18,6 +19,10 @@ type OrderItem = {
         id: number;
         name: string;
         hexCode: string;
+    } | null;
+    size: {
+        id: number;
+        name: string;
     } | null;
 };
 
@@ -189,6 +194,7 @@ export default function OrdersClient({ orders }: Props) {
                                 <th className="text-left px-4 py-3">Phone</th>
                                 <th className="text-left px-4 py-3">Product</th>
                                 <th className="text-left px-4 py-3">Color</th>
+                                <th className="text-left px-4 py-3">Size</th>
                                 <th className="text-left px-4 py-3">Qty</th>
                                 <th className="text-left px-4 py-3">Total</th>
                                 <th className="text-left px-4 py-3">Status</th>
@@ -213,6 +219,13 @@ export default function OrdersClient({ orders }: Props) {
                                                     <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: o.orderItems[0].color.hexCode }} />
                                                     <span className="text-xs text-gray-600">{o.orderItems[0].color.name}</span>
                                                 </div>
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {o.orderItems?.[0]?.size ? (
+                                                <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded font-medium uppercase tracking-wider">{o.orderItems[0].size.name}</span>
                                             ) : (
                                                 <span className="text-gray-400 text-xs">—</span>
                                             )}
@@ -361,6 +374,7 @@ export default function OrdersClient({ orders }: Props) {
                                         <tr>
                                             <th className="text-left px-4 py-2">Product</th>
                                             <th className="text-left px-4 py-2">Color</th>
+                                            <th className="text-left px-4 py-2">Size</th>
                                             <th className="text-right px-4 py-2">Qty</th>
                                             <th className="text-right px-4 py-2">Price</th>
                                             <th className="text-right px-4 py-2">Total</th>
@@ -379,6 +393,13 @@ export default function OrdersClient({ orders }: Props) {
                                                             <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: item.color.hexCode }} />
                                                             <span className="text-xs text-gray-600">{item.color.name}</span>
                                                         </div>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-xs">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    {item.size ? (
+                                                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded font-medium uppercase tracking-wider">{item.size.name}</span>
                                                     ) : (
                                                         <span className="text-gray-400 text-xs">—</span>
                                                     )}

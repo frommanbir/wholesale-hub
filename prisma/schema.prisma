@@ -37,6 +37,7 @@ model Product {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   productColors ProductColor[]
+  productSizes  ProductSize[]
   orderItems    OrderItem[]
 }
 
@@ -56,8 +57,27 @@ model ProductColor {
   colorId   Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  product   Product  @relation(fields: [productId], references: [id])
-  color     Color    @relation(fields: [colorId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color     Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
+}
+
+model Size {
+  id            Int            @id @default(autoincrement())
+  name          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  productSizes  ProductSize[]
+  orderItems    OrderItem[]
+}
+
+model ProductSize {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  sizeId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      Size     @relation(fields: [sizeId], references: [id], onDelete: Cascade)
 }
 
 model Order {
@@ -83,14 +103,16 @@ model OrderItem {
   orderId   Int
   productId Int
   colorId   Int?
+  sizeId    Int?
   quantity  Int
   price     Decimal  @db.Decimal(10, 2)
   total     Decimal  @db.Decimal(10, 2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
-  color     Color?   @relation(fields: [colorId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color     Color?   @relation(fields: [colorId], references: [id], onDelete: SetNull)
+  size      Size?    @relation(fields: [sizeId], references: [id], onDelete: SetNull)
 }
 
 model Setting {
