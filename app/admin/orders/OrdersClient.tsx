@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import OrderStatusSelect from "./OrderStatusSelect";
+import { deleteOrder } from "../../actions/order";
 
 type OrderItem = {
     id: number;
@@ -48,9 +49,16 @@ type Props = {
 };
 
 export default function OrdersClient({ orders }: Props) {
+    const [ordersList, setOrdersList] = useState(orders);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [pending, startTransition] = useTransition();
     const itemsPerPage = 10;
+
+    // Keep ordersList in sync with incoming orders prop
+    useEffect(() => {
+        setOrdersList(orders);
+    }, [orders]);
 
     // Search and Filter States
     const [searchTerm, setSearchTerm] = useState("");
@@ -62,8 +70,21 @@ export default function OrdersClient({ orders }: Props) {
         setCurrentPage(1);
     }, [searchTerm, statusFilter, sortBy]);
 
+    function handleDelete(id: number) {
+        if (!confirm("Are you sure you want to delete this order?")) return;
+        startTransition(async () => {
+            try {
+                await deleteOrder(id);
+                setOrdersList((prev) => prev.filter((o) => o.id !== id));
+            } catch (error) {
+                console.error("Failed to delete order:", error);
+                alert("Failed to delete the order. Please try again.");
+            }
+        });
+    }
+
     // Derived Filtered and Sorted Orders List
-    const filteredOrders = orders
+    const filteredOrders = ordersList
         .filter((o) => {
             const term = searchTerm.toLowerCase();
             const orderNumMatch = o.orderNumber.toLowerCase().includes(term);
@@ -239,12 +260,21 @@ export default function OrdersClient({ orders }: Props) {
                                             {new Date(o.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <button
-                                                onClick={() => setSelectedOrder(o)}
-                                                className="text-gray-600 hover:text-black font-semibold transition text-xs cursor-pointer"
-                                            >
-                                                View
-                                            </button>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => setSelectedOrder(o)}
+                                                    className="text-gray-600 hover:text-black font-semibold transition text-xs cursor-pointer"
+                                                >
+                                                    View
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(o.id)}
+                                                    disabled={pending}
+                                                    className="text-red-600 hover:text-red-800 font-semibold transition text-xs cursor-pointer disabled:opacity-50"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
