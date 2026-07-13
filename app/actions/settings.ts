@@ -2,6 +2,7 @@
 // Fetches site settings and homepage settings from the DB
 
 import { prisma } from "../lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export async function getSettings() {
     return prisma.setting.findFirst();
@@ -23,6 +24,7 @@ export async function saveSettings(data: {
     instagram?: string;
     twitter?: string;
     qrImage?: string;
+    whatsapp?: string;
 }) {
     // Convert empty strings to null for optional fields
     const toNull = (v?: string) => (v && v.trim() !== "" ? v : null);
@@ -39,6 +41,7 @@ export async function saveSettings(data: {
         instagram: toNull(data.instagram),
         twitter: toNull(data.twitter),
         qrImage: toNull(data.qrImage),
+        whatsapp: toNull(data.whatsapp),
     };
 
     const existing = await prisma.setting.findFirst();
@@ -47,6 +50,7 @@ export async function saveSettings(data: {
     } else {
         await prisma.setting.create({ data: payload });
     }
+    revalidatePath("/", "layout");
     return { success: true };
 }
 

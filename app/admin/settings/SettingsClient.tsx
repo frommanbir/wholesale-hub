@@ -15,6 +15,7 @@ type Setting = {
     instagram?: string | null;
     twitter?: string | null;
     qrImage?: string | null;
+    whatsapp?: string | null;
 } | null;
 
 type HomepageSetting = {
@@ -167,6 +168,7 @@ export default function SettingsClient({
         instagram: settings?.instagram ?? "",
         twitter: settings?.twitter ?? "",
         qrImage: settings?.qrImage ?? "",
+        whatsapp: settings?.whatsapp ?? "",
     });
 
     const [heroForm, setHeroForm] = useState({
@@ -217,6 +219,7 @@ export default function SettingsClient({
                     {[
                         { label: "Site Name", key: "siteName", max: 100 },
                         { label: "Shipping Charge (Rs.)", key: "shippingCharge", type: "number" },
+                        { label: "WhatsApp Number", key: "whatsapp", max: 20, hint: "with country code, e.g. 97798xxxxxxxx" },
                         { label: "Facebook URL", key: "facebook", max: 255 },
                         { label: "Instagram URL", key: "instagram", max: 255 },
                         { label: "Twitter URL", key: "twitter", max: 255 },
@@ -225,7 +228,14 @@ export default function SettingsClient({
                         return (
                             <div key={f.key}>
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className="text-xs text-gray-500 block">{f.label}</label>
+                                    <div className="flex items-center gap-1.5">
+                                        <label className="text-xs text-gray-500 block">{f.label}</label>
+                                        {'hint' in f && (
+                                            <span className="text-[10px] text-gray-400 italic">
+                                                ({f.hint})
+                                            </span>
+                                        )}
+                                    </div>
                                     {f.max && (
                                         <span className="text-[10px] text-gray-400">
                                             {val.length} / {f.max}

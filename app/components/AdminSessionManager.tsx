@@ -29,7 +29,7 @@ export default function AdminSessionManager() {
     events.forEach((event) => window.addEventListener(event, updateActivity));
 
     // Monitor for inactivity & storage updates
-    const checkSession = () => {
+    function checkSession() {
       const now = Date.now();
       const lastActivity = parseInt(
         localStorage.getItem("admin_last_activity") || "0",
@@ -40,23 +40,23 @@ export default function AdminSessionManager() {
       if (lastActivity > 0 && now - lastActivity > INACTIVITY_TIMEOUT) {
         logout();
       }
-    };
+    }
 
     // Check session immediately on mount in case it expired while tab was sleeping/suspended
     checkSession();
     const sessionCheckInterval = setInterval(checkSession, 5000);
 
     // Sync logout across tabs if another tab logged out
-    const handleStorageChange = (e: StorageEvent) => {
+    function handleStorageChange(e: StorageEvent) {
       if (e.key === "admin_logged_out" && e.newValue === "true") {
         localStorage.removeItem("admin_last_tab");
         router.push("/login");
         router.refresh();
       }
-    };
+    }
     window.addEventListener("storage", handleStorageChange);
 
-    const logout = async () => {
+    async function logout() {
       // Avoid infinite logout loops
       if (localStorage.getItem("admin_logged_out") === "true") return;
 
@@ -69,7 +69,7 @@ export default function AdminSessionManager() {
       }
       router.push("/login");
       router.refresh();
-    };
+    }
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
