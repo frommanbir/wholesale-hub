@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { logoutUser } from "../actions/auth";
 import AdminSessionManager from "@/app/components/AdminSessionManager";
 
@@ -18,6 +18,25 @@ const navLinks = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
+    const router = useRouter();
+    const isFirstMount = useRef(true);
+
+    useEffect(() => {
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            if (pathname === "/admin") {
+                const lastTab = localStorage.getItem("admin_last_tab");
+                if (lastTab && lastTab !== "/admin") {
+                    router.push(lastTab);
+                    return;
+                }
+            }
+        }
+
+        if (pathname.startsWith("/admin")) {
+            localStorage.setItem("admin_last_tab", pathname);
+        }
+    }, [pathname, router]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">

@@ -13,6 +13,7 @@ type PlaceOrderInput = {
     quantity: number;
     price: number;
     shippingCharge: number;
+    paymentMethod: string;
 };
 
 export async function placeOrder(data: PlaceOrderInput) {
@@ -31,7 +32,7 @@ export async function placeOrder(data: PlaceOrderInput) {
             subtotal,
             shippingCharge: data.shippingCharge,
             total,
-            paymentMethod: "Cash on Delivery",
+            paymentMethod: data.paymentMethod,
             status: "pending",
             orderItems: {
                 create: {

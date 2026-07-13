@@ -127,6 +127,7 @@ model Setting {
   facebook       String?
   instagram      String?
   twitter        String?
+  qrImage        String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

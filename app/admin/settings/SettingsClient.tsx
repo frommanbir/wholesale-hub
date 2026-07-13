@@ -14,6 +14,7 @@ type Setting = {
     facebook?: string | null;
     instagram?: string | null;
     twitter?: string | null;
+    qrImage?: string | null;
 } | null;
 
 type HomepageSetting = {
@@ -32,13 +33,15 @@ type ImagePickerProps = {
     currentUrl: string;
     /** Called with the new public URL after a successful upload */
     onUploaded: (url: string) => void;
+    /** Called when the user removes the current image */
+    onCleared?: () => void;
     /** Hint shown below the label */
     hint?: string;
     /** Max width for the preview thumbnail */
     previewClass?: string;
 };
 
-function ImagePicker({ label, currentUrl, onUploaded, hint, previewClass = "h-16 w-16" }: ImagePickerProps) {
+function ImagePicker({ label, currentUrl, onUploaded, onCleared, hint, previewClass = "h-16 w-16" }: ImagePickerProps) {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState("");
     const ref = useRef<HTMLInputElement>(null);
@@ -81,30 +84,47 @@ function ImagePicker({ label, currentUrl, onUploaded, hint, previewClass = "h-16
                 )}
 
                 <div className="flex-1 min-w-0">
-                    {/* Upload button */}
-                    <button
-                        type="button"
-                        onClick={() => ref.current?.click()}
-                        disabled={uploading}
-                        className="inline-flex items-center gap-1.5 border border-gray-300 rounded px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition disabled:opacity-60"
-                    >
-                        {uploading ? (
-                            <>
-                                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    {/* Upload + Remove buttons row */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Upload button */}
+                        <button
+                            type="button"
+                            onClick={() => ref.current?.click()}
+                            disabled={uploading}
+                            className="inline-flex items-center gap-1.5 border border-gray-300 rounded px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition disabled:opacity-60"
+                        >
+                            {uploading ? (
+                                <>
+                                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                    Uploading…
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                    </svg>
+                                    {currentUrl ? "Change image" : "Upload image"}
+                                </>
+                            )}
+                        </button>
+
+                        {/* Remove button — only shown when image is set */}
+                        {currentUrl && onCleared && (
+                            <button
+                                type="button"
+                                onClick={onCleared}
+                                className="inline-flex items-center gap-1 border border-red-200 rounded px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 hover:border-red-300 transition"
+                            >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                                Uploading…
-                            </>
-                        ) : (
-                            <>
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                                </svg>
-                                {currentUrl ? "Change image" : "Upload image"}
-                            </>
+                                Remove
+                            </button>
                         )}
-                    </button>
+                    </div>
 
                     {/* Current path pill */}
                     {currentUrl && (
@@ -146,6 +166,7 @@ export default function SettingsClient({
         facebook: settings?.facebook ?? "",
         instagram: settings?.instagram ?? "",
         twitter: settings?.twitter ?? "",
+        qrImage: settings?.qrImage ?? "",
     });
 
     const [heroForm, setHeroForm] = useState({
@@ -230,6 +251,7 @@ export default function SettingsClient({
                         hint="Displayed in the navbar and footer"
                         currentUrl={siteForm.logo}
                         onUploaded={(url) => setSiteForm((p) => ({ ...p, logo: url }))}
+                        onCleared={() => setSiteForm((p) => ({ ...p, logo: "" }))}
                         previewClass="h-12 w-24 object-contain"
                     />
 
@@ -239,7 +261,18 @@ export default function SettingsClient({
                         hint="Square icon shown in browser tabs (PNG/ICO, 32×32 recommended)"
                         currentUrl={siteForm.favicon}
                         onUploaded={(url) => setSiteForm((p) => ({ ...p, favicon: url }))}
+                        onCleared={() => setSiteForm((p) => ({ ...p, favicon: "" }))}
                         previewClass="h-10 w-10"
+                    />
+
+                    {/* QR Image upload */}
+                    <ImagePicker
+                        label="QR Payment Image"
+                        hint="Scan-to-pay QR code shown to customers at checkout. Leave empty to hide QR payment option."
+                        currentUrl={siteForm.qrImage}
+                        onUploaded={(url) => setSiteForm((p) => ({ ...p, qrImage: url }))}
+                        onCleared={() => setSiteForm((p) => ({ ...p, qrImage: "" }))}
+                        previewClass="h-32 w-32"
                     />
 
                     <button

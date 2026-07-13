@@ -20,7 +20,9 @@ export default function LoginPage() {
         } else {
             // Redirect based on role — cookie is already set by the server action
             if (result.role === "admin") {
-                window.location.href = "/admin";
+                localStorage.removeItem("admin_logged_out");
+                const lastTab = localStorage.getItem("admin_last_tab") || "/admin";
+                window.location.href = lastTab;
             } else {
                 window.location.href = "/";
             }

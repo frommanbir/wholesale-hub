@@ -53,6 +53,7 @@ export default function OrdersClient({ orders }: Props) {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [pending, startTransition] = useTransition();
+    const [copiedPhone, setCopiedPhone] = useState<number | null>(null);
     const itemsPerPage = 10;
 
     // Keep ordersList in sync with incoming orders prop
@@ -69,6 +70,20 @@ export default function OrdersClient({ orders }: Props) {
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter, sortBy]);
+
+    // Format phone: insert dash after +977 country code only
+    function formatPhone(phone: string) {
+        if (phone.startsWith("+977")) return "+977-" + phone.slice(4);
+        return phone;
+    }
+
+    // Copy phone to clipboard and show brief feedback
+    function copyPhone(orderId: number, phone: string) {
+        navigator.clipboard.writeText(phone).then(() => {
+            setCopiedPhone(orderId);
+            setTimeout(() => setCopiedPhone(null), 2000);
+        });
+    }
 
     function handleDelete(id: number) {
         if (!confirm("Are you sure you want to delete this order?")) return;
@@ -203,13 +218,123 @@ export default function OrdersClient({ orders }: Props) {
                 {(searchTerm || statusFilter !== "all") && " matching active filters"}
             </div>
 
-            {/* Table Container */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col border border-gray-100">
+            {/* ── Mobile Card List (visible on small screens) ──────────────── */}
+            <div className="md:hidden bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                {paginatedOrders.length === 0 ? (
+                    <p className="text-center text-gray-400 py-10">No orders found.</p>
+                ) : (
+                    <ul className="divide-y divide-gray-100">
+                        {paginatedOrders.map((o, idx) => {
+                            const serialNumber = (activePage - 1) * itemsPerPage + idx + 1;
+                            const totalQty = o.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+                            return (
+                                <li key={o.id} className="p-4 flex flex-col gap-2.5">
+                                    {/* Top row: serial + order number + date */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-gray-400 font-medium">#{serialNumber}</span>
+                                            <span className="font-mono text-[11px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{o.orderNumber}</span>
+                                        </div>
+                                        <span className="text-[11px] text-gray-400">{new Date(o.createdAt).toLocaleDateString()}</span>
+                                    </div>
+
+                                    {/* Customer info */}
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <p className="font-semibold text-sm text-gray-900">{o.customerName}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyPhone(o.id, o.phone)}
+                                                className="flex items-center gap-1 text-xs text-blue-600 active:text-blue-800 transition select-none"
+                                            >
+                                                {formatPhone(o.phone)}
+                                                {copiedPhone === o.id ? (
+                                                    <span className="text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full ml-1">
+                                                        Copied!
+                                                    </span>
+                                                ) : (
+                                                    <svg className="w-3 h-3 text-gray-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        </div>
+                                        {/* Payment badge */}
+                                        {o.paymentMethod === "QR Payment" ? (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                                                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                                                QR
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 shrink-0">
+                                                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                                COD
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Product + qty + total */}
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600 truncate max-w-[55%]">{o.orderItems?.[0]?.product?.name || "—"} <span className="text-gray-400 text-xs">×{totalQty}</span></span>
+                                        <span className="font-semibold text-gray-900">Rs. {Number(o.total).toLocaleString()}</span>
+                                    </div>
+
+                                    {/* Status + Actions */}
+                                    <div className="flex items-center justify-between gap-2 pt-1">
+                                        <OrderStatusSelect id={o.id} currentStatus={o.status} />
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => setSelectedOrder(o)}
+                                                className="text-gray-600 hover:text-black font-semibold transition text-xs cursor-pointer"
+                                            >
+                                                View
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(o.id)}
+                                                disabled={pending}
+                                                className="text-red-600 hover:text-red-800 font-semibold transition text-xs cursor-pointer disabled:opacity-50"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </div>
+
+            {/* Mobile Pagination */}
+            {totalPages > 1 && (
+                <div className="md:hidden flex items-center justify-between bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={activePage === 1}
+                        className="text-xs font-medium px-3 py-1.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition"
+                    >
+                        ← Previous
+                    </button>
+                    <span className="text-xs text-gray-500">
+                        Page <span className="font-semibold text-gray-900">{activePage}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
+                    </span>
+                    <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={activePage === totalPages}
+                        className="text-xs font-medium px-3 py-1.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition"
+                    >
+                        Next →
+                    </button>
+                </div>
+            )}
+
+            {/* ── Desktop Table (hidden on small screens) ───────────────────── */}
+            <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden flex flex-col border border-gray-100">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-gray-600">
                             <tr>
-                                <th className="text-left px-4 py-3 w-12">S.N.</th>
+                                <th className="text-left px-4 py-3">S.N.</th>
                                 <th className="text-left px-4 py-3">Order #</th>
                                 <th className="text-left px-4 py-3">Customer</th>
                                 <th className="text-left px-4 py-3">Phone</th>
@@ -218,6 +343,7 @@ export default function OrdersClient({ orders }: Props) {
                                 <th className="text-left px-4 py-3">Size</th>
                                 <th className="text-left px-4 py-3">Qty</th>
                                 <th className="text-left px-4 py-3">Total</th>
+                                <th className="text-left px-4 py-3">Payment</th>
                                 <th className="text-left px-4 py-3">Status</th>
                                 <th className="text-left px-4 py-3">Date</th>
                                 <th className="text-left px-4 py-3">Actions</th>
@@ -232,7 +358,7 @@ export default function OrdersClient({ orders }: Props) {
                                         <td className="px-4 py-3 text-gray-500 font-medium">{serialNumber}</td>
                                         <td className="px-4 py-3 font-mono text-xs">{o.orderNumber}</td>
                                         <td className="px-4 py-3 font-medium">{o.customerName}</td>
-                                        <td className="px-4 py-3">{o.phone}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap">{formatPhone(o.phone)}</td>
                                         <td className="px-4 py-3 max-w-[150px] truncate">{o.orderItems?.[0]?.product?.name || "—"}</td>
                                         <td className="px-4 py-3">
                                             {o.orderItems?.[0]?.color ? (
@@ -253,6 +379,19 @@ export default function OrdersClient({ orders }: Props) {
                                         </td>
                                         <td className="px-4 py-3 font-medium">{totalQty}</td>
                                         <td className="px-4 py-3">Rs. {Number(o.total).toLocaleString()}</td>
+                                        <td className="px-4 py-3">
+                                            {o.paymentMethod === "QR Payment" ? (
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                                                    QR
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                                    COD
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="px-4 py-3">
                                             <OrderStatusSelect id={o.id} currentStatus={o.status} />
                                         </td>
@@ -286,6 +425,7 @@ export default function OrdersClient({ orders }: Props) {
                 {filteredOrders.length === 0 && (
                     <p className="text-center text-gray-400 py-10">No orders found.</p>
                 )}
+
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
@@ -363,115 +503,108 @@ export default function OrdersClient({ orders }: Props) {
             </div>
 
             {/* View Order Detail Modal */}
-            {selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-[2px]">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative">
-                        {/* Close Button */}
-                        <button
-                            onClick={() => setSelectedOrder(null)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
-                            type="button"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+{selectedOrder && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-[2px]">
+        <div className="relative w-full max-w-sm rounded-[28px] p-[3px] bg-gradient-to-br from-emerald-400 via-emerald-200 to-white shadow-2xl">
+            <div className="bg-white rounded-[25px] max-h-[90vh] overflow-y-auto relative">
 
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                            Order Detail <span className="font-mono text-sm text-gray-400">#{selectedOrder.orderNumber}</span>
-                        </h2>
+                {/* Close Button */}
+                <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="absolute top-3 right-3 z-10 text-gray-400 hover:text-gray-600 bg-white/80 backdrop-blur rounded-full p-1 transition"
+                    type="button"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
-                        {/* Customer Details */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-gray-100 pb-4 mb-4 text-sm">
-                            <div>
-                                <h3 className="font-semibold text-gray-900 mb-2">Customer Info</h3>
-                                <p className="text-gray-700"><span className="text-gray-400">Name:</span> {selectedOrder.customerName}</p>
-                                <p className="text-gray-700"><span className="text-gray-400">Phone:</span> {selectedOrder.phone}</p>
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-gray-900 mb-2">Shipping Details</h3>
-                                <p className="text-gray-700"><span className="text-gray-400">Address:</span> {selectedOrder.address}</p>
-                                {/* <p className="text-gray-700"><span className="text-gray-400">Method:</span> {selectedOrder.paymentMethod}</p> */}
-                            </div>
-                        </div>
+                {/* Timestamp badge */}
+                <span className="absolute bottom-3 right-4 text-[11px] text-gray-400">
+                    {new Date(selectedOrder.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
 
-                        {/* Order Items Table */}
-                        <div className="mb-6">
-                            <h3 className="font-semibold text-gray-900 mb-3 text-sm">Order Items</h3>
-                            <div className="border border-gray-100 rounded-lg overflow-hidden">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 text-gray-600">
-                                        <tr>
-                                            <th className="text-left px-4 py-2">Product</th>
-                                            <th className="text-left px-4 py-2">Color</th>
-                                            <th className="text-left px-4 py-2">Size</th>
-                                            <th className="text-right px-4 py-2">Qty</th>
-                                            <th className="text-right px-4 py-2">Price</th>
-                                            <th className="text-right px-4 py-2">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {selectedOrder.orderItems?.map((item) => (
-                                            <tr key={item.id} className="border-t border-gray-100">
-                                                <td className="px-4 py-3 flex items-center gap-2">
-                                                    <img src={item.product?.image} alt={item.product?.name} className="w-8 h-8 object-cover rounded shrink-0" />
-                                                    <span className="font-medium">{item.product?.name}</span>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {item.color ? (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: item.color.hexCode }} />
-                                                            <span className="text-xs text-gray-600">{item.color.name}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-gray-400 text-xs">—</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {item.size ? (
-                                                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded font-medium uppercase tracking-wider">{item.size.name}</span>
-                                                    ) : (
-                                                        <span className="text-gray-400 text-xs">—</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3 text-right">{item.quantity}</td>
-                                                <td className="px-4 py-3 text-right">Rs. {Number(item.price).toLocaleString()}</td>
-                                                <td className="px-4 py-3 text-right font-medium">Rs. {Number(item.total).toLocaleString()}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Summary */}
-                        <div className="flex flex-col items-end gap-1.5 text-sm border-t border-gray-100 pt-4">
-                            <div className="flex justify-between w-64 text-gray-600">
-                                <span>Subtotal:</span>
-                                <span>Rs. {Number(selectedOrder.subtotal).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between w-64 text-gray-600">
-                                <span>Shipping Charge:</span>
-                                <span>Rs. {Number(selectedOrder.shippingCharge).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between w-64 font-semibold text-gray-900 border-t border-gray-100 pt-2 text-base">
-                                <span>Total:</span>
-                                <span>Rs. {Number(selectedOrder.total).toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        {/* Close footer button */}
-                        <div className="flex justify-end mt-6">
-                            <button
-                                onClick={() => setSelectedOrder(null)}
-                                className="bg-black text-white px-5 py-2 rounded text-sm hover:bg-gray-800 transition"
-                            >
-                                Close
-                            </button>
-                        </div>
+                <div className="p-5 pb-8">
+                    {/* Product Image */}
+                    <div className="flex justify-center mb-4">
+                        <img
+                            src={selectedOrder.orderItems?.[0]?.product?.image}
+                            alt={selectedOrder.orderItems?.[0]?.product?.name}
+                            className="w-40 h-52 object-cover rounded-xl shadow-md"
+                        />
                     </div>
+
+                    {/* Heading */}
+                    <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-1.5">
+                        🛒 New Order Received!
+                    </h2>
+
+                    {/* Product / Total / Qty / Payment rows */}
+                    <div className="space-y-1.5 text-sm mb-4">
+                        <p className="flex items-center gap-2">
+                            <span>📦</span>
+                            <span className="font-semibold text-gray-900">Product:</span>
+                            <span className="text-gray-700">{selectedOrder.orderItems?.[0]?.product?.name}</span>
+                        </p>
+                        <p className="flex items-center gap-2">
+                            <span>💰</span>
+                            <span className="font-semibold text-gray-900">Total:</span>
+                            <span className="text-gray-700">NPR {Number(selectedOrder.total).toLocaleString()}/-</span>
+                        </p>
+                        <p className="flex items-center gap-2">
+                            <span>📊</span>
+                            <span className="font-semibold text-gray-900">Quantity:</span>
+                            <span className="text-gray-700">
+                                {selectedOrder.orderItems?.reduce((sum, item) => sum + item.quantity, 0)}
+                            </span>
+                        </p>
+                        <p className="flex items-center gap-2">
+                            <span>💳</span>
+                            <span className="font-semibold text-gray-900">Payment:</span>
+                            {selectedOrder.paymentMethod === "QR Payment" ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                                    QR Payment
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                    Cash on Delivery
+                                </span>
+                            )}
+                        </p>
+                    </div>
+
+                    {/* Customer Details */}
+                    <div className="mb-4">
+                        <h3 className="font-bold text-gray-900 mb-1.5 flex items-center gap-1.5 text-sm">
+                            👤 Customer Details:
+                        </h3>
+                        <ul className="text-sm text-gray-700 space-y-1 pl-1">
+                            <li>• <span className="font-medium">Name:</span> {selectedOrder.customerName}</li>
+                            <li>
+                                • <span className="font-medium">Phone:</span>{" "}
+                                <a href={`tel:${selectedOrder.phone}`} className="text-blue-600 hover:underline">
+                                    {formatPhone(selectedOrder.phone)}
+                                </a>
+                            </li>
+                            <li>• <span className="font-medium">Address:</span> {selectedOrder.address}</li>
+                        </ul>
+                    </div>
+
+                    {/* Order ID */}
+                    <p className="flex items-center gap-2 text-sm text-gray-600 border-t border-gray-100 pt-3">
+                        <span>🆔</span>
+                        <span className="font-semibold text-gray-900">Order ID:</span>
+                        <span className="font-mono text-xs">{selectedOrder.orderNumber}</span>
+                        <span className="text-gray-400">•</span>
+                        <span className="text-xs">{new Date(selectedOrder.createdAt).toLocaleString()}</span>
+                    </p>
                 </div>
-            )}
+            </div>
+        </div>
+    </div>
+)}
         </div>
     );
 }

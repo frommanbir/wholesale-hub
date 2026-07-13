@@ -45,6 +45,7 @@ export default async function ProductDetailPage({ params }: Props) {
     const colors = product.productColors.map((pc) => pc.color);
     const sizes = product.productSizes.map((ps) => ps.size);
     const shippingCharge = Number(settings?.shippingCharge ?? 0);
+    const qrImage = settings?.qrImage ?? null;
 
     return (
         <div className="flex flex-col min-h-screen bg-white">
@@ -116,6 +117,7 @@ export default async function ProductDetailPage({ params }: Props) {
                             shippingCharge={shippingCharge}
                             colors={colors}
                             sizes={sizes}
+                            qrImage={qrImage}
                         />
 
                         {/* Trust Badges */}
