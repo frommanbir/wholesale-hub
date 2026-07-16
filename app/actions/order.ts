@@ -2,7 +2,7 @@
 // Takes order form data and saves it to the DB, returning the order number
 
 import { prisma } from "../lib/prisma";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import path from "path";
 
 type PlaceOrderInput = {
@@ -18,6 +18,16 @@ type PlaceOrderInput = {
     paymentMethod: string;
     advancePaid: number;
     paymentProof: string | null;
+};
+
+// Helper function to resolve local file paths
+const getLocalFilePath = (filePathOrUrl: string) => {
+    const filename = path.basename(filePathOrUrl);
+    let filePath = path.join(process.cwd(), "uploads", filename);
+    if (!existsSync(filePath)) {
+        filePath = path.join(process.cwd(), "public", "uploads", filename);
+    }
+    return existsSync(filePath) ? filePath : null;
 };
 
 // Helper function to send Telegram message
@@ -51,6 +61,7 @@ async function sendTelegramNotification(orderId: number) {
         const caption = `
 🛒 <b>Order Placed Successfully!</b>
 <b>Order Number:</b> <code>${order.orderNumber}</code>
+
 📦 <b>Product:</b> ${productName}
 💰 <b>Total:</b> NPR ${order.total}/-
 💵 <b>Advance Paid:</b> NPR ${order.advancePaid}/-
@@ -59,35 +70,94 @@ async function sendTelegramNotification(orderId: number) {
 🎨 <b>Color:</b> ${colorName}
 📏 <b>Size:</b> ${sizeName}
 💳 <b>Payment:</b> ${order.paymentMethod}
+
 👤 <b>Customer Details:</b>
 • <b>Name:</b> ${order.customerName}
 • <b>Phone:</b> ${order.phone}
 • <b>Address:</b> ${order.address}
         `.trim();
-        // 3. If there is a payment proof image, upload it
-        if (order.paymentProof) {
-            // Reconstruct local path (e.g. /uploads/filename.webp -> C:/workspace/uploads/filename.webp)
-            const absoluteFilePath = path.join(process.cwd(), order.paymentProof);
-            const fileBuffer = readFileSync(absoluteFilePath);
-            
+
+        // 3. Resolve paths to both images
+        const productLocalPath = firstItem.product.image ? getLocalFilePath(firstItem.product.image) : null;
+        const paymentLocalPath = order.paymentProof ? getLocalFilePath(order.paymentProof) : null;
+
+        if (productLocalPath && paymentLocalPath) {
+            // Case A: Both images exist -> Send as a grouped Album (Media Group)
+            const formData = new FormData();
+            formData.append("chat_id", chatId);
+
+            const media = [];
+
+            // Add Product Image (carries the caption/text details)
+            const productBuffer = readFileSync(productLocalPath);
+            const productBlob = new Blob([productBuffer], { type: "image/jpeg" });
+            formData.append("product_image", productBlob, path.basename(productLocalPath));
+            media.push({
+                type: "photo",
+                media: "attach://product_image",
+                caption: caption,
+                parse_mode: "HTML",
+            });
+
+            // Add Payment Proof
+            const paymentBuffer = readFileSync(paymentLocalPath);
+            const paymentBlob = new Blob([paymentBuffer], { type: "image/jpeg" });
+            formData.append("payment_proof", paymentBlob, path.basename(paymentLocalPath));
+            media.push({
+                type: "photo",
+                media: "attach://payment_proof",
+            });
+
+            formData.append("media", JSON.stringify(media));
+
+            const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMediaGroup`, {
+                method: "POST",
+                body: formData,
+            });
+            if (!res.ok) {
+                const errText = await res.text();
+                console.error("Telegram API Error (MediaGroup):", errText);
+            }
+        } else if (productLocalPath) {
+            // Case B: Only product image exists
             const formData = new FormData();
             formData.append("chat_id", chatId);
             
-            // Convert Buffer to standard Blob for web-native fetch upload
-            const fileBlob = new Blob([fileBuffer], { type: "image/webp" });
-            formData.append("photo", fileBlob, path.basename(absoluteFilePath));
+            const productBuffer = readFileSync(productLocalPath);
+            const productBlob = new Blob([productBuffer], { type: "image/jpeg" });
+            formData.append("photo", productBlob, path.basename(productLocalPath));
             formData.append("caption", caption);
             formData.append("parse_mode", "HTML");
+
             const res = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
                 method: "POST",
                 body: formData,
             });
             if (!res.ok) {
                 const errText = await res.text();
-                console.error("Telegram API Error (Photo):", errText);
+                console.error("Telegram API Error (ProductPhoto):", errText);
+            }
+        } else if (paymentLocalPath) {
+            // Case C: Only payment proof exists
+            const formData = new FormData();
+            formData.append("chat_id", chatId);
+            
+            const paymentBuffer = readFileSync(paymentLocalPath);
+            const paymentBlob = new Blob([paymentBuffer], { type: "image/jpeg" });
+            formData.append("photo", paymentBlob, path.basename(paymentLocalPath));
+            formData.append("caption", caption);
+            formData.append("parse_mode", "HTML");
+
+            const res = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                method: "POST",
+                body: formData,
+            });
+            if (!res.ok) {
+                const errText = await res.text();
+                console.error("Telegram API Error (PaymentPhoto):", errText);
             }
         } else {
-            // 4. Fallback to normal text message if no payment proof is uploaded
+            // Case D: Fallback to text message if no images exist
             const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
