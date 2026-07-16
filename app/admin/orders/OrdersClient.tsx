@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import OrderStatusSelect from "./OrderStatusSelect";
 import { deleteOrder } from "../../actions/order";
 
@@ -55,14 +55,105 @@ export default function OrdersClient({ orders }: Props) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeProofUrl, setActiveProofUrl] = useState<string | null>(null);
-  const [isZoomed, setIsZoomed] = useState(false);
   const [pending, startTransition] = useTransition();
   const [copiedPhone, setCopiedPhone] = useState<number | null>(null);
 
+  // Zoom and pan states for payment proof modal
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragMoved, setDragMoved] = useState(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
+
+  const isZoomed = scale > 1;
+
   function closeProofModal() {
     setActiveProofUrl(null);
-    setIsZoomed(false);
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+    setIsDragging(false);
+    setDragMoved(false);
   }
+
+  // Set up mouse wheel listener on viewport element to handle zooming
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const handleWheelEvent = (e: WheelEvent) => {
+      if (!activeProofUrl) return;
+      e.preventDefault();
+      const zoomIntensity = 0.15;
+      const delta = e.deltaY < 0 ? 1 : -1;
+      setScale((prevScale) => {
+        const nextScale = Math.min(Math.max(prevScale + delta * zoomIntensity, 1), 5);
+        if (nextScale === 1) {
+          setPosition({ x: 0, y: 0 });
+        }
+        return nextScale;
+      });
+    };
+
+    viewport.addEventListener("wheel", handleWheelEvent, { passive: false });
+    return () => {
+      viewport.removeEventListener("wheel", handleWheelEvent);
+    };
+  }, [activeProofUrl]);
+
+  // Drag and pan handler functions
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (scale <= 1) return;
+    e.preventDefault();
+    setIsDragging(true);
+    setDragMoved(false);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    if (Math.abs(newX - position.x) > 3 || Math.abs(newY - position.y) > 3) {
+      setDragMoved(true);
+    }
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (scale <= 1) return;
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragMoved(false);
+    setDragStart({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const newX = touch.clientX - dragStart.x;
+    const newY = touch.clientY - dragStart.y;
+    if (Math.abs(newX - position.x) > 3 || Math.abs(newY - position.y) > 3) {
+      setDragMoved(true);
+    }
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (dragMoved) return;
+    if (scale > 1) {
+      setScale(1);
+      setPosition({ x: 0, y: 0 });
+    } else {
+      setScale(2);
+      setPosition({ x: 0, y: 0 });
+    }
+  };
   const itemsPerPage = 10;
 
   // Keep ordersList in sync with incoming orders prop
@@ -499,7 +590,7 @@ export default function OrdersClient({ orders }: Props) {
                       )}
                     </td>
                     {/* <td className="px-4 py-3">
-                                            {o.paymentMethod === "QR Payment" ? (
+                    {o.paymentMethod === "QR Payment" ? (
                                                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                                                     <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                                                     QR
@@ -511,6 +602,7 @@ export default function OrdersClient({ orders }: Props) {
                                                 </span>
                                             )}
                                         </td> */}
+                                            
                     <td className="px-4 py-3">
                       <OrderStatusSelect id={o.id} currentStatus={o.status} />
                     </td>
@@ -914,7 +1006,9 @@ export default function OrdersClient({ orders }: Props) {
           onClick={closeProofModal}
         >
           <div
-            className="relative w-full h-full md:h-auto md:max-w-lg md:bg-white md:rounded-3xl md:shadow-2xl p-0 md:p-5 flex flex-col items-center justify-center md:gap-4"
+            className={`relative w-full h-full md:h-auto md:bg-white md:rounded-3xl md:shadow-2xl p-0 md:p-5 flex flex-col items-center justify-center md:gap-4 transition-all duration-300 ${
+              scale > 1 ? "md:max-w-5xl" : "md:max-w-lg"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
@@ -946,21 +1040,93 @@ export default function OrdersClient({ orders }: Props) {
             </div>
 
             {/* Image Viewport */}
-            <div className={`md:border md:border-gray-100 md:rounded-2xl md:bg-gray-50 p-0 md:p-2 flex h-full md:max-h-[70vh] w-full transition-all duration-300 ${
-              isZoomed 
-                ? "overflow-auto items-start justify-start" 
-                : "overflow-hidden items-center justify-center"
-            }`}>
+            <div
+              ref={viewportRef}
+              className="relative md:border md:border-gray-100 md:rounded-2xl md:bg-gray-50 p-0 md:p-2 flex items-center justify-center h-full md:max-h-[75vh] w-full overflow-hidden transition-all duration-300"
+            >
               <img
                 src={activeProofUrl}
                 alt="Payment Proof Screenshot"
-                className={`transition-all duration-300 select-none ${
-                  isZoomed
-                    ? "cursor-zoom-out min-w-[200%] h-auto object-contain"
-                    : "cursor-zoom-in w-full h-full md:w-auto md:h-auto max-h-screen md:max-h-[60vh] object-contain md:rounded-xl shadow-xs"
+                style={{
+                  transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                  transformOrigin: "center center",
+                  cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "zoom-in",
+                }}
+                onDragStart={(e) => e.preventDefault()}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleMouseUp}
+                onClick={handleImageClick}
+                className={`max-h-screen md:max-h-[65vh] w-auto h-auto object-contain md:rounded-xl shadow-xs select-none ${
+                  isDragging ? "transition-none" : "transition-transform duration-200"
                 }`}
-                onClick={() => setIsZoomed(!isZoomed)}
               />
+
+              {/* Floating Zoom Controls Overlay */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/75 backdrop-blur-md px-4 py-2 rounded-full shadow-lg z-50 transition-all duration-300 select-none">
+                {/* Zoom Out Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScale((prev) => {
+                      const next = Math.max(prev - 0.25, 1);
+                      if (next === 1) setPosition({ x: 0, y: 0 });
+                      return next;
+                    });
+                  }}
+                  disabled={scale <= 1}
+                  className="text-white hover:text-rose-400 disabled:opacity-40 disabled:hover:text-white transition p-1 cursor-pointer"
+                  title="Zoom Out"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20 12H4" />
+                  </svg>
+                </button>
+
+                {/* Zoom Level Indicator */}
+                <span className="text-white text-xs font-bold min-w-[3.5rem] text-center">
+                  {Math.round(scale * 100)}%
+                </span>
+
+                {/* Zoom In Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScale((prev) => Math.min(prev + 0.25, 5));
+                  }}
+                  disabled={scale >= 5}
+                  className="text-white hover:text-rose-400 disabled:opacity-40 disabled:hover:text-white transition p-1 cursor-pointer"
+                  title="Zoom In"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+
+                {/* Reset Button */}
+                {(scale > 1 || position.x !== 0 || position.y !== 0) && (
+                  <>
+                    <div className="w-[1px] h-4 bg-white/20 self-center mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScale(1);
+                        setPosition({ x: 0, y: 0 });
+                      }}
+                      className="text-white hover:text-rose-400 transition p-1 cursor-pointer"
+                      title="Reset Zoom"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             <button
