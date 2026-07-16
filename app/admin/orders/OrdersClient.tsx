@@ -55,8 +55,14 @@ export default function OrdersClient({ orders }: Props) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeProofUrl, setActiveProofUrl] = useState<string | null>(null);
+  const [isZoomed, setIsZoomed] = useState(false);
   const [pending, startTransition] = useTransition();
   const [copiedPhone, setCopiedPhone] = useState<number | null>(null);
+
+  function closeProofModal() {
+    setActiveProofUrl(null);
+    setIsZoomed(false);
+  }
   const itemsPerPage = 10;
 
   // Keep ordersList in sync with incoming orders prop
@@ -905,7 +911,7 @@ export default function OrdersClient({ orders }: Props) {
       {activeProofUrl && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 md:bg-black/75 md:backdrop-blur-[4px] animate-fadeIn cursor-zoom-out"
-          onClick={() => setActiveProofUrl(null)}
+          onClick={closeProofModal}
         >
           <div
             className="relative w-full h-full md:h-auto md:max-w-lg md:bg-white md:rounded-3xl md:shadow-2xl p-0 md:p-5 flex flex-col items-center justify-center md:gap-4"
@@ -914,7 +920,7 @@ export default function OrdersClient({ orders }: Props) {
             {/* Close button */}
             <button
               type="button"
-              onClick={() => setActiveProofUrl(null)}
+              onClick={closeProofModal}
               className="absolute top-4 right-4 text-white md:text-gray-400 md:hover:text-gray-700 bg-black/40 md:bg-gray-100 hover:bg-black/60 md:hover:bg-gray-250 transition rounded-full p-2 md:p-1.5 cursor-pointer z-50"
               aria-label="Close proof modal"
             >
@@ -940,18 +946,26 @@ export default function OrdersClient({ orders }: Props) {
             </div>
 
             {/* Image Viewport */}
-            <div className="md:border md:border-gray-100 md:rounded-2xl overflow-hidden md:bg-gray-50 p-0 md:p-2 flex items-center justify-center h-full md:max-h-[70vh] w-full">
+            <div className={`md:border md:border-gray-100 md:rounded-2xl md:bg-gray-50 p-0 md:p-2 flex h-full md:max-h-[70vh] w-full transition-all duration-300 ${
+              isZoomed 
+                ? "overflow-auto items-start justify-start" 
+                : "overflow-hidden items-center justify-center"
+            }`}>
               <img
                 src={activeProofUrl}
                 alt="Payment Proof Screenshot"
-                className="w-full h-full md:w-auto md:h-auto max-h-screen md:max-h-[60vh] object-contain md:rounded-xl shadow-xs"
-                onClick={() => setActiveProofUrl(null)}
+                className={`transition-all duration-300 select-none ${
+                  isZoomed
+                    ? "cursor-zoom-out min-w-[200%] h-auto object-contain"
+                    : "cursor-zoom-in w-full h-full md:w-auto md:h-auto max-h-screen md:max-h-[60vh] object-contain md:rounded-xl shadow-xs"
+                }`}
+                onClick={() => setIsZoomed(!isZoomed)}
               />
             </div>
 
             <button
               type="button"
-              onClick={() => setActiveProofUrl(null)}
+              onClick={closeProofModal}
               className="hidden md:block w-full bg-rose-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-rose-700 transition cursor-pointer"
             >
               Done
