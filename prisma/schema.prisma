@@ -91,6 +91,8 @@ model Order {
   total          Decimal     @db.Decimal(10, 2)
   paymentMethod  String      @default("Cash on Delivery")
   status         String      @default("pending")
+  advancePaid    Decimal     @db.Decimal(10, 2) @default(0)
+  paymentProof   String?     @db.Text
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   userId         Int?

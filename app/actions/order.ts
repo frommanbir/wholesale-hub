@@ -14,6 +14,8 @@ type PlaceOrderInput = {
     price: number;
     shippingCharge: number;
     paymentMethod: string;
+    advancePaid: number;
+    paymentProof: string | null;
 };
 
 export async function placeOrder(data: PlaceOrderInput) {
@@ -33,6 +35,8 @@ export async function placeOrder(data: PlaceOrderInput) {
             shippingCharge: data.shippingCharge,
             total,
             paymentMethod: data.paymentMethod,
+            advancePaid: data.advancePaid,
+            paymentProof: data.paymentProof,
             status: "pending",
             orderItems: {
                 create: {

@@ -121,6 +121,7 @@ export default async function ProductDetailPage({ params }: Props) {
                             qrImage={qrImage}
                             whatsappNumber={whatsappNumber}
                             productName={product.name}
+                            productImage={product.image}
                         />
 
                         {/* Trust Badges */}
