@@ -50,6 +50,8 @@ export default function OrderForm({
     const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
     const [uploadingFile, setUploadingFile] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadTimeRemaining, setUploadTimeRemaining] = useState<number | null>(null);
 
     // System status
     const [loading, setLoading] = useState(false);
@@ -60,8 +62,11 @@ export default function OrderForm({
 
     // Auto-sync advance payment based on quantity (Rs 300 per piece)
     useEffect(() => {
-        setAdvancePaidInput((300 * quantity).toString());
-    }, [quantity]);
+        const subtotal = price * quantity;
+        const total = subtotal + shippingCharge;
+        const defaultAdvance = Math.min(300 * quantity, total);
+        setAdvancePaidInput(defaultAdvance.toString());
+    }, [quantity, price, shippingCharge]);
 
     const subtotal = price * quantity;
     const total = subtotal + shippingCharge;
@@ -132,32 +137,75 @@ export default function OrderForm({
     }
 
     // Step 3 File Upload
-    async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
 
         setUploadingFile(true);
         setUploadError(null);
+        setUploadProgress(0);
+        setUploadTimeRemaining(null);
 
         const formData = new FormData();
         formData.append("file", file);
 
-        try {
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-            });
-            const data = await res.json();
-            if (res.ok && data.url) {
-                setPaymentProofUrl(data.url);
-            } else {
-                setUploadError(data.error || "Upload failed. Please try again.");
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/upload");
+
+        const startTime = Date.now();
+
+        // Track upload progress
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable && event.total > 0) {
+                const percentComplete = Math.round((event.loaded / event.total) * 100);
+                setUploadProgress(percentComplete);
+
+                const elapsedMs = Date.now() - startTime;
+                if (elapsedMs > 500 && event.loaded > 0) {
+                    const speedBytesPerMs = event.loaded / elapsedMs;
+                    const remainingBytes = event.total - event.loaded;
+                    const remainingMs = remainingBytes / speedBytesPerMs;
+                    const remainingSec = Math.ceil(remainingMs / 1000);
+                    setUploadTimeRemaining(remainingSec);
+                } else {
+                    setUploadTimeRemaining(null);
+                }
             }
-        } catch (err) {
-            setUploadError("Network error. Please try again.");
-        } finally {
+        };
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.url) {
+                        setPaymentProofUrl(data.url);
+                    } else {
+                        setUploadError(data.error || "Upload failed. Please try again.");
+                    }
+                } catch (err) {
+                    setUploadError("Upload failed. Invalid response.");
+                }
+            } else {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    setUploadError(data.error || "Upload failed. Please try again.");
+                } catch (err) {
+                    setUploadError("Upload failed. Please try again.");
+                }
+            }
             setUploadingFile(false);
-        }
+            setUploadProgress(0);
+            setUploadTimeRemaining(null);
+        };
+
+        xhr.onerror = () => {
+            setUploadError("Network error. Please try again.");
+            setUploadingFile(false);
+            setUploadProgress(0);
+            setUploadTimeRemaining(null);
+        };
+
+        xhr.send(formData);
     }
 
     // Final Order Creation
@@ -365,7 +413,7 @@ Please confirm my order. Thank you!`;
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Address*</label>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Full Address*</label>
                                 <textarea
                                     rows={3}
                                     placeholder="Enter your full address (e.g. New Road, Kathmandu)"
@@ -472,7 +520,7 @@ Please confirm my order. Thank you!`;
                         <div className="border-t border-gray-100 pt-4 space-y-3">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                    Advance Payment (Rs.)
+                                    Advance Payment (Minimum of Rs.300 Per Piece)
                                 </label>
                                 <div className="relative rounded-xl border border-gray-350 focus-within:ring-1 focus-within:ring-rose-500 focus-within:border-rose-500 overflow-hidden bg-white">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium select-none">
@@ -480,16 +528,36 @@ Please confirm my order. Thank you!`;
                                     </span>
                                     <input
                                         type="number"
-                                        min="0"
+                                        min={Math.min(300 * quantity, total)}
                                         max={total}
                                         placeholder="Enter advance amount"
                                         value={advancePaidInput}
                                         onChange={(e) => {
                                             const val = e.target.value;
-                                            if (Number(val) <= total) {
-                                                setAdvancePaidInput(val);
+
+                                            // Allow empty value while typing
+                                            if (val === "") {
+                                                setAdvancePaidInput("");
+                                                setValidationError(null);
+                                                return;
+                                            }
+
+                                            const amount = Number(val);
+                                            const minRequired = Math.min(300 * quantity, total);
+
+                                            if (amount > total) {
+                                                setValidationError(`Advance payment cannot exceed the total order amount of Rs. ${total}.`);
+                                            } else if (amount > 0 && amount < minRequired) {
+                                                if (minRequired === total) {
+                                                    setValidationError(`Advance payment must be at least Rs. ${minRequired} (the full order amount, since the total is less than Rs. 300 per piece).`);
+                                                } else {
+                                                    setValidationError(`Advance payment must be at least Rs. ${minRequired} (${quantity} × Rs. 300).`);
+                                                }
+                                            } else {
                                                 setValidationError(null);
                                             }
+
+                                            setAdvancePaidInput(val);
                                         }}
                                         className="w-full pl-12 pr-4 py-3 text-sm font-semibold outline-none bg-transparent"
                                     />
@@ -504,7 +572,7 @@ Please confirm my order. Thank you!`;
                         </div>
 
                         {validationError && (
-                            <div className="p-3 bg-red-50 text-red-650 rounded-xl text-xs font-medium border border-red-100">
+                            <div className="p-3 bg-red-50 text-red-650 rounded-xl text-xs font-medium border border-red-100 animate-fadeIn">
                                 ⚠️ {validationError}
                             </div>
                         )}
@@ -522,6 +590,20 @@ Please confirm my order. Thank you!`;
                                 <button
                                     type="button"
                                     onClick={() => {
+                                        const amount = Number(advancePaidInput) || 0;
+                                        const minRequired = Math.min(300 * quantity, total);
+                                        if (amount > total) {
+                                            setValidationError(`Advance payment cannot exceed the total order amount of Rs. ${total}.`);
+                                            return;
+                                        }
+                                        if (amount > 0 && amount < minRequired) {
+                                            if (minRequired === total) {
+                                                setValidationError(`Advance payment must be at least Rs. ${minRequired} (the full order amount, since the total is less than Rs. 300 per piece).`);
+                                            } else {
+                                                setValidationError(`Advance payment must be at least Rs. ${minRequired} (${quantity} × Rs. 300).`);
+                                            }
+                                            return;
+                                        }
                                         if (!qrImage) {
                                             setValidationError("QR payment is not configured by the administrator. Set advance payment to 0 to pay with Cash on Delivery.");
                                             return;
@@ -586,7 +668,7 @@ Please confirm my order. Thank you!`;
                             </label>
                             
                             {paymentProofUrl ? (
-                                <div className="relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50 flex items-center p-3 gap-3">
+                                <div className="relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50 flex items-center p-3 gap-3 animate-fadeIn">
                                     <img
                                         src={paymentProofUrl}
                                         alt="Payment Proof"
@@ -604,16 +686,51 @@ Please confirm my order. Thank you!`;
                                         Remove
                                     </button>
                                 </div>
+                            ) : uploadingFile ? (
+                                <div className="border border-gray-200 rounded-xl p-5 bg-white flex flex-col items-center justify-center gap-4 shadow-sm animate-fadeIn">
+                                    <div className="relative flex items-center justify-center w-12 h-12">
+                                        {/* Spinning Outer Ring */}
+                                        <div className="absolute inset-0 rounded-full border-2 border-gray-100"></div>
+                                        <div className="absolute inset-0 rounded-full border-2 border-rose-600 border-t-transparent animate-spin"></div>
+                                        {/* Percentage */}
+                                        <span className="text-[10px] font-bold text-gray-805 z-10">
+                                            {uploadProgress}%
+                                        </span>
+                                    </div>
+                                    <div className="w-full space-y-2.5">
+                                        <div className="flex justify-between items-center text-xs font-semibold">
+                                            <span className="text-gray-700">Uploading Payment Screenshot</span>
+                                            <span className="text-rose-600 font-bold">{uploadProgress}%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                            <div 
+                                                className="bg-rose-600 h-full rounded-full transition-all duration-300 ease-out shadow-xs"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between items-center text-[10px] text-gray-400 font-medium px-1">
+                                            <span>Please do not close this tab</span>
+                                            <span>
+                                                {uploadProgress === 100 
+                                                    ? "Processing image..." 
+                                                    : uploadTimeRemaining !== null 
+                                                        ? `~${uploadTimeRemaining}s remaining` 
+                                                        : "Uploading..."
+                                                }
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
                                 <div
-                                    onClick={() => !uploadingFile && fileInputRef.current?.click()}
+                                    onClick={() => fileInputRef.current?.click()}
                                     className="border-2 border-dashed border-gray-300 hover:border-rose-500 rounded-xl p-6 text-center cursor-pointer bg-white transition duration-200 hover:bg-rose-50/10 flex flex-col items-center justify-center gap-1.5"
                                 >
                                     <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                     </svg>
                                     <span className="text-xs font-semibold text-gray-700">
-                                        {uploadingFile ? "Uploading image..." : "Choose Payment Screenshot"}
+                                        Choose Payment Screenshot
                                     </span>
                                     <span className="text-[10px] text-gray-405 font-medium">PNG, JPG or WEBP up to 20MB</span>
                                     <input
