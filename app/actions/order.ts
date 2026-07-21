@@ -4,6 +4,7 @@
 import { prisma } from "../lib/prisma";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
+import { checkRateLimit, getClientIp } from "../lib/rateLimit";
 
 type PlaceOrderInput = {
     customerName: string;
@@ -178,6 +179,12 @@ async function sendTelegramNotification(orderId: number) {
 }
 
 export async function placeOrder(data: PlaceOrderInput) {
+    const ip = await getClientIp();
+    const { success, reset } = await checkRateLimit(`order:${ip}`, 5, 60);
+    if (!success) {
+        return { success: false, message: `Too many order attempts. Please try again in ${reset} seconds.` };
+    }
+
     const subtotal = data.price * data.quantity;
     const total = subtotal + data.shippingCharge;
 

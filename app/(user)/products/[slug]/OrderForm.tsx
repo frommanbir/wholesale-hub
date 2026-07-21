@@ -228,11 +228,11 @@ export default function OrderForm({
                 paymentProof: paymentProofUrl,
             });
             if (result.success) {
-                setOrderNumber(result.orderNumber);
+                setOrderNumber(result.orderNumber || null);
                 setOrderDate(new Date().toLocaleDateString("en-US", { day: 'numeric', month: 'short', year: 'numeric' }));
                 setStep(4);
             } else {
-                setValidationError("Failed to place order. Please try again.");
+                setValidationError(result.message || "Failed to place order. Please try again.");
             }
         } catch (err) {
             setValidationError("Failed to place order due to server error.");

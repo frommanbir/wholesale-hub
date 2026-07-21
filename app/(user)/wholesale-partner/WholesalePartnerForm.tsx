@@ -15,11 +15,15 @@ export default function WholesalePartnerForm() {
         setLoading(true);
         setError("");
         try {
-            await createContact({ name, phone, address });
-            setSuccess(true);
-            setName("");
-            setPhone("");
-            setAddress("");
+            const res = await createContact({ name, phone, address });
+            if (res && !res.success) {
+                setError(res.message || "Something went wrong. Please try again.");
+            } else {
+                setSuccess(true);
+                setName("");
+                setPhone("");
+                setAddress("");
+            }
         } catch {
             setError("Something went wrong. Please try again.");
         }

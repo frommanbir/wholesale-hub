@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 import { setSession, clearSession } from "../lib/session";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import { checkRateLimit, getClientIp } from "../lib/rateLimit";
 
 export async function registerUser(data: {
     name: string;
@@ -37,6 +38,12 @@ export async function loginUser(data: {
     phone: string;
     password: string;
 }) {
+    const ip = await getClientIp();
+    const { success, reset } = await checkRateLimit(`login:${ip}`, 7, 60);
+    if (!success) {
+        return { success: false, message: `Too many login attempts. Please try again in ${reset} seconds.` };
+    }
+
     const user = await prisma.user.findUnique({
         where: { phone: data.phone },
     });
