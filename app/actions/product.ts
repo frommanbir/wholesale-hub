@@ -48,13 +48,16 @@ export async function createProduct(data: {
     stock: number;
     status: boolean;
     image: string;
+    images?: string[];
     colorIds?: number[];
     sizeIds?: number[];
 }) {
-    const { colorIds, sizeIds, ...productData } = data;
+    const { colorIds, sizeIds, images, ...productData } = data;
+    const imagesJson = images ? JSON.stringify(images) : null;
     return prisma.product.create({
         data: {
             ...productData,
+            images: imagesJson,
             productColors: colorIds
                 ? {
                       create: colorIds.map((colorId) => ({ colorId })),
@@ -92,15 +95,18 @@ export async function updateProduct(
         stock: number;
         status: boolean;
         image: string;
+        images?: string[];
         colorIds?: number[];
         sizeIds?: number[];
     }
 ) {
-    const { colorIds, sizeIds, ...productData } = data;
+    const { colorIds, sizeIds, images, ...productData } = data;
+    const imagesJson = images ? JSON.stringify(images) : undefined;
     return prisma.product.update({
         where: { id },
         data: {
             ...productData,
+            images: imagesJson,
             productColors: colorIds
                 ? {
                       deleteMany: {},

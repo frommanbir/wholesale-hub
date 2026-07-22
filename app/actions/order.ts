@@ -68,7 +68,7 @@ async function sendTelegramNotification(orderId: number) {
 💵 <b>Advance Paid:</b> NPR ${order.advancePaid}/-
 🚚 <b>Remaining COD:</b> NPR ${Number(order.total) - Number(order.advancePaid)}/-
 🔢 <b>Quantity:</b> ${firstItem.quantity}
-🎨 <b>Color:</b> ${colorName}
+🎨 <b>Color / Number:</b> ${colorName}
 📏 <b>Size:</b> ${sizeName}
 💳 <b>Payment:</b> ${order.paymentMethod}
 

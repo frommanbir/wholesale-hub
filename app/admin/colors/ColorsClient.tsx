@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
-import { createColor, deleteColor, updateColor } from "../../actions/color";
+import { createColor, deleteColor, updateColor, createNumberColors } from "../../actions/color";
 
 type Color = { id: number; name: string; hexCode: string };
 
@@ -10,7 +10,22 @@ export default function ColorsClient({ initialColors }: { initialColors: Color[]
     const [hexCode, setHexCode] = useState("#000000");
     const [editingColor, setEditingColor] = useState<Color | null>(null);
     const [loading, setLoading] = useState(false);
+    const [generatingNumbers, setGeneratingNumbers] = useState(false);
     const [pending, startTransition] = useTransition();
+
+    async function handleQuickAddNumbers() {
+        setGeneratingNumbers(true);
+        try {
+            const added = await createNumberColors(1, 10);
+            if (added.length > 0) {
+                setColors((prev) => [...added, ...prev]);
+            }
+        } catch (err) {
+            console.error("Failed to generate number options:", err);
+        } finally {
+            setGeneratingNumbers(false);
+        }
+    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -123,7 +138,17 @@ export default function ColorsClient({ initialColors }: { initialColors: Color[]
 
             {/* Colors List */}
             <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4">All Colors</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold">All Colors / Numbers</h2>
+                    <button
+                        type="button"
+                        onClick={handleQuickAddNumbers}
+                        disabled={generatingNumbers}
+                        className="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 font-semibold px-3 py-1.5 rounded-lg border border-rose-200 transition cursor-pointer disabled:opacity-50"
+                    >
+                        {generatingNumbers ? "Generating..." : "+ Quick Add Numbers (1–10)"}
+                    </button>
+                </div>
                 <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
                     {colors.map((color) => (
                         <div

@@ -18,6 +18,7 @@ type Product = {
     name: string;
     slug: string;
     image: string;
+    images?: string | null;
     price: unknown;
     discount: unknown;
     stock: number;
@@ -35,6 +36,14 @@ type Product = {
         sizeId: number;
         size: Size;
     }[];
+};
+
+type ImageItem = {
+    id: string;
+    url?: string;
+    file?: File;
+    preview: string;
+    isCover: boolean;
 };
 
 type Props = {
@@ -60,8 +69,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
     const [selectedColorIds, setSelectedColorIds] = useState<number[]>([]);
     const [selectedSizeIds, setSelectedSizeIds] = useState<number[]>([]);
 
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string>("");
+    const [imagesList, setImagesList] = useState<ImageItem[]>([]);
     const [uploadError, setUploadError] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,7 +81,6 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
         if (isOpen) {
             setError("");
             setUploadError("");
-            setImageFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
 
             if (product) {
@@ -86,7 +93,32 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                     stock: String(product.stock),
                     status: product.status,
                 });
-                setPreview(product.image);
+
+                // Load images
+                let initialImages: string[] = [];
+                if (product.images) {
+                    try {
+                        const parsed = JSON.parse(product.images);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            initialImages = parsed;
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse product.images JSON:", e);
+                    }
+                }
+                if (initialImages.length === 0 && product.image) {
+                    initialImages = [product.image];
+                }
+
+                setImagesList(
+                    initialImages.map((url, idx) => ({
+                        id: `existing-${idx}-${Date.now()}`,
+                        url,
+                        preview: url,
+                        isCover: idx === 0,
+                    }))
+                );
+
                 setSelectedColorIds(product.productColors?.map((pc) => pc.colorId) || []);
                 setSelectedSizeIds(product.productSizes?.map((ps) => ps.sizeId) || []);
             } else {
@@ -99,7 +131,7 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                     stock: "",
                     status: true,
                 });
-                setPreview("");
+                setImagesList([]);
                 setSelectedColorIds([]);
                 setSelectedSizeIds([]);
             }
@@ -120,7 +152,6 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
 
     function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
         const name = e.target.value;
-        // Auto-generate slug from name if not editing
         if (!product) {
             const slug = name
                 .toLowerCase()
@@ -132,33 +163,68 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
         }
     }
 
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
+    function handleFilesSelected(files: FileList | File[]) {
+        const fileArray = Array.from(files);
+        if (fileArray.length === 0) return;
         setUploadError("");
 
-        if (!file.type.startsWith("image/")) {
-            setUploadError("Only image files are allowed.");
-            return;
-        }
-        if (file.size > 20 * 1024 * 1024) {
-            setUploadError("Image must be under 20 MB.");
-            return;
+        const newItems: ImageItem[] = [];
+        for (const file of fileArray) {
+            if (!file.type.startsWith("image/")) {
+                setUploadError("Only image files are allowed.");
+                continue;
+            }
+            if (file.size > 20 * 1024 * 1024) {
+                setUploadError("Image must be under 20 MB.");
+                continue;
+            }
+            newItems.push({
+                id: Math.random().toString(36).slice(2, 9),
+                file,
+                preview: URL.createObjectURL(file),
+                isCover: false,
+            });
         }
 
-        setImageFile(file);
-        setPreview(URL.createObjectURL(file));
+        setImagesList((prev) => {
+            const updated = [...prev, ...newItems];
+            if (updated.length > 0 && !updated.some((img) => img.isCover)) {
+                updated[0].isCover = true;
+            }
+            return updated;
+        });
+    }
+
+    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        if (e.target.files) {
+            handleFilesSelected(e.target.files);
+        }
     }
 
     function handleDrop(e: React.DragEvent<HTMLDivElement>) {
         e.preventDefault();
-        const file = e.dataTransfer.files[0];
-        if (!file) return;
-        const syntheticEvent = {
-            target: { files: [file] },
-        } as unknown as React.ChangeEvent<HTMLInputElement>;
-        handleFileChange(syntheticEvent);
+        if (e.dataTransfer.files) {
+            handleFilesSelected(e.dataTransfer.files);
+        }
+    }
+
+    function handleSetCover(id: string) {
+        setImagesList((prev) =>
+            prev.map((item) => ({
+                ...item,
+                isCover: item.id === id,
+            }))
+        );
+    }
+
+    function handleRemoveImage(id: string) {
+        setImagesList((prev) => {
+            const filtered = prev.filter((item) => item.id !== id);
+            if (filtered.length > 0 && !filtered.some((item) => item.isCover)) {
+                filtered[0].isCover = true;
+            }
+            return filtered;
+        });
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -166,29 +232,37 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
         setError("");
         setUploadError("");
 
-        if (!product && !imageFile) {
-            setUploadError("Please select a product image.");
+        if (imagesList.length === 0) {
+            setUploadError("Please upload at least one product image.");
             return;
         }
 
         setLoading(true);
 
         try {
-            let imageUrl = product?.image ?? "";
+            const uploadedUrls: string[] = [];
 
-            if (imageFile) {
-                const fd = new FormData();
-                fd.append("file", imageFile);
-                const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
-                const uploadData = await uploadRes.json();
+            for (const item of imagesList) {
+                if (item.file) {
+                    const fd = new FormData();
+                    fd.append("file", item.file);
+                    const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
+                    const uploadData = await uploadRes.json();
 
-                if (!uploadRes.ok || !uploadData.url) {
-                    setUploadError(uploadData.error ?? "Image upload failed.");
-                    setLoading(false);
-                    return;
+                    if (!uploadRes.ok || !uploadData.url) {
+                        setUploadError(uploadData.error ?? "Image upload failed.");
+                        setLoading(false);
+                        return;
+                    }
+                    uploadedUrls.push(uploadData.url);
+                } else if (item.url) {
+                    uploadedUrls.push(item.url);
                 }
-                imageUrl = uploadData.url;
             }
+
+            // Determine cover image URL
+            const coverIndex = imagesList.findIndex((item) => item.isCover);
+            const coverUrl = coverIndex !== -1 ? uploadedUrls[coverIndex] : uploadedUrls[0];
 
             const productData: any = {
                 name: form.name,
@@ -197,12 +271,12 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                 discount: parseFloat(form.discount || "0"),
                 stock: parseInt(form.stock),
                 status: form.status,
-                image: imageUrl,
+                image: coverUrl,
+                images: uploadedUrls,
                 colorIds: selectedColorIds,
                 sizeIds: selectedSizeIds,
             };
 
-            // Only send slug if creating a new product or if it has actually changed
             if (!product || form.slug !== product.slug) {
                 productData.slug = form.slug;
             }
@@ -351,9 +425,12 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                         </select>
                     </div>
 
-                    {/* Color Checklist */}
+                    {/* Color / Number Checklist */}
                     <div className="sm:col-span-2">
-                        <label className="text-xs text-gray-500 mb-2 block font-medium">Available Colors</label>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="text-xs text-gray-700 block font-semibold">Available Colors / Numbers</label>
+                            <span className="text-[10px] text-gray-400">Select options present in product image</span>
+                        </div>
                         <div className="flex flex-wrap gap-2">
                             {colors.map((color) => {
                                 const isSelected = selectedColorIds.includes(color.id);
@@ -368,19 +445,19 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                                                 setSelectedColorIds((prev) => [...prev, color.id]);
                                             }
                                         }}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition cursor-pointer select-none ${
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition cursor-pointer select-none ${
                                             isSelected
-                                                ? "border-black bg-black text-white"
+                                                ? "border-rose-600 bg-rose-600 text-white shadow-sm"
                                                 : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                         }`}
                                     >
                                         <span
-                                            className="w-3 h-3 rounded-full border border-black/10 shrink-0"
-                                            style={{ backgroundColor: color.hexCode }}
+                                            className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
+                                            style={{ backgroundColor: color.hexCode || "#000" }}
                                         />
                                         <span>{color.name}</span>
                                         {isSelected && (
-                                            <svg className="w-3 h-3 text-white ml-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg className="w-3.5 h-3.5 text-white ml-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
                                         )}
@@ -388,14 +465,14 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                                 );
                             })}
                             {colors.length === 0 && (
-                                <p className="text-xs text-gray-400">No colors configured yet. Create some in the Colors dashboard.</p>
+                                <p className="text-xs text-gray-400">No colors configured yet. Go to Admin Colors dashboard to add numbers (1–10) or colors.</p>
                             )}
                         </div>
                     </div>
 
                     {/* Size Checklist */}
                     <div className="sm:col-span-2">
-                        <label className="text-xs text-gray-500 mb-2 block font-medium">Available Sizes</label>
+                        <label className="text-xs text-gray-700 mb-2 block font-semibold">Available Sizes</label>
                         <div className="flex flex-wrap gap-2">
                             {sizes.map((size) => {
                                 const isSelected = selectedSizeIds.includes(size.id);
@@ -431,82 +508,87 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
                         </div>
                     </div>
 
-                    {/* Image Upload */}
-                    <div className="sm:col-span-2">
-                        <label className="text-xs text-gray-500 mb-1 block">
-                            Product Image <span className="text-gray-400">(max 5 MB)</span>
-                        </label>
+                    {/* Multi-Image Upload */}
+                    <div className="sm:col-span-2 space-y-3">
+                        <div className="flex justify-between items-center">
+                            <label className="text-xs font-semibold text-gray-700 block">
+                                Product Images <span className="text-gray-400 font-normal">(Select multiple files or drag & drop)</span>
+                            </label>
+                            <span className="text-xs text-gray-500 font-medium">
+                                {imagesList.length} {imagesList.length === 1 ? "image" : "images"} uploaded
+                            </span>
+                        </div>
 
+                        {/* Thumbnail Grid */}
+                        {imagesList.length > 0 && (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                                {imagesList.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className={`relative group rounded-lg overflow-hidden border-2 transition bg-white aspect-square ${
+                                            item.isCover ? "border-rose-600 ring-2 ring-rose-100" : "border-gray-200"
+                                        }`}
+                                    >
+                                        <img
+                                            src={item.preview}
+                                            alt="Product thumbnail"
+                                            className="w-full h-full object-cover"
+                                        />
+
+                                        {/* Cover badge */}
+                                        {item.isCover && (
+                                            <span className="absolute top-1 left-1 bg-rose-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                                                COVER
+                                            </span>
+                                        )}
+
+                                        {/* Action Overlays */}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-1.5 p-1">
+                                            {!item.isCover && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSetCover(item.id)}
+                                                    className="bg-white/90 text-gray-900 text-[10px] font-bold px-2 py-1 rounded hover:bg-white transition"
+                                                >
+                                                    Set Cover
+                                                </button>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveImage(item.id)}
+                                                className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded hover:bg-red-700 transition"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* File Upload Dropzone */}
                         <div
                             onClick={() => fileInputRef.current?.click()}
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={handleDrop}
-                            className={`relative border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                                preview
-                                    ? "border-gray-300 bg-gray-50"
-                                    : "border-gray-300 hover:border-black bg-gray-50 hover:bg-white"
-                            }`}
-                            style={{ minHeight: "140px" }}
+                            className="border-2 border-dashed border-gray-300 hover:border-black rounded-xl p-5 text-center cursor-pointer bg-gray-50 hover:bg-white transition flex flex-col items-center justify-center gap-2"
                         >
-                            {preview ? (
-                                <div className="flex items-start gap-4 p-4">
-                                    <img
-                                        src={preview}
-                                        alt="Preview"
-                                        className="h-28 w-28 object-cover rounded border border-gray-200 shrink-0"
-                                    />
-                                    <div className="flex flex-col justify-between h-28 py-1">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-700 truncate max-w-[200px]">
-                                                {imageFile ? imageFile.name : "Current Image"}
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-0.5">
-                                                {imageFile ? (imageFile.size / 1024).toFixed(0) + " KB" : ""}
-                                            </p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setImageFile(null);
-                                                setPreview("");
-                                                setUploadError("");
-                                                if (fileInputRef.current) fileInputRef.current.value = "";
-                                            }}
-                                            className="text-xs text-red-500 hover:underline text-left"
-                                        >
-                                            Remove image
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center h-full py-8 text-gray-400">
-                                    <svg
-                                        className="w-8 h-8 mb-2"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        strokeWidth="1.5"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                                        />
-                                    </svg>
-                                    <p className="text-sm font-medium text-gray-600">
-                                        Click or drag & drop to upload
-                                    </p>
-                                    <p className="text-xs mt-1">PNG, JPG, WEBP — up to 5 MB</p>
-                                </div>
-                            )}
-
+                            <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                            </svg>
+                            <div>
+                                <p className="text-xs font-semibold text-gray-700">
+                                    Click or drag & drop to add images
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">PNG, JPG, WEBP — up to 20 MB each (Select multiple files at once)</p>
+                            </div>
                             <input
                                 ref={fileInputRef}
                                 type="file"
                                 accept="image/*"
+                                multiple
                                 onChange={handleFileChange}
-                                className="sr-only"
+                                className="hidden"
                             />
                         </div>
 

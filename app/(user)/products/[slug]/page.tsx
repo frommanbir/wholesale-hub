@@ -7,6 +7,8 @@ import { getProductBySlug } from "../../../actions/product";
 import { getSettings } from "../../../actions/settings";
 import OrderForm from "./OrderForm";
 
+import ProductImageGallery from "./ProductImageGallery";
+
 type Props = {
     params: Promise<{ slug: string }>;
 };
@@ -42,6 +44,21 @@ export default async function ProductDetailPage({ params }: Props) {
 
     if (!product) return notFound();
 
+    let allImages: string[] = [];
+    if (product.images) {
+        try {
+            const parsed = JSON.parse(product.images);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                allImages = parsed;
+            }
+        } catch (e) {
+            console.error("Error parsing product.images:", e);
+        }
+    }
+    if (allImages.length === 0 && product.image) {
+        allImages = [product.image];
+    }
+
     const colors = product.productColors.map((pc) => pc.color);
     const sizes = product.productSizes.map((ps) => ps.size);
     const shippingCharge = Number(settings?.shippingCharge ?? 0);
@@ -63,17 +80,8 @@ export default async function ProductDetailPage({ params }: Props) {
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    {/* ── Left: Product Image ────────────────── */}
-                    <div className="rounded-lg overflow-hidden bg-gray-100 aspect-[3/4] relative">
-                        <Image
-                            src={product.image}
-                            alt={product.name}
-                            fill
-                            priority
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover"
-                        />
-                    </div>
+                    {/* ── Left: Product Image Gallery ────────────────── */}
+                    <ProductImageGallery images={allImages} productName={product.name} />
 
                     {/* ── Right: Info + Form ─────────────────── */}
                     <div className="flex flex-col gap-4">

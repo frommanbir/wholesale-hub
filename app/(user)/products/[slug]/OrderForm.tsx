@@ -296,34 +296,41 @@ Please confirm my order. Thank you!`;
 
     return (
         <div className="flex flex-col gap-6">
-            {/* Available Colors (Interactive) */}
+            {/* Available Colors / Numbers (Interactive) */}
             {colors.length > 0 && (
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-800">Available Colors</span>
-                        <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">
-                            {colors.find((c) => c.id === selectedColorId)?.name || ""}
+                        <span className="text-sm font-semibold text-gray-900">Select Color / Number</span>
+                        <span className="text-xs text-rose-600 font-bold bg-rose-50 border border-rose-100 px-2.5 py-0.5 rounded-md">
+                            Selected: {colors.find((c) => c.id === selectedColorId)?.name || "None"}
                         </span>
                     </div>
                     <div className="flex gap-2 flex-wrap">
                         {colors.map((color) => {
                             const isSelected = selectedColorId === color.id;
+                            // Check if color name is a number or starts with "Number"
+                            const isNumberOption = /^\d+$/.test(color.name.trim()) || /^Number\s*\d+$/i.test(color.name.trim());
                             return (
                                 <button
                                     key={color.id}
                                     type="button"
                                     onClick={() => setSelectedColorId(color.id)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition cursor-pointer select-none ${
+                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer select-none shadow-2xs ${
                                         isSelected
-                                            ? "border-black bg-black text-white"
-                                            : "border-gray-200 bg-white text-gray-750 hover:border-gray-300"
+                                            ? "border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-100 scale-105"
+                                            : "border-gray-250 bg-white text-gray-800 hover:border-rose-400 hover:bg-rose-50/20"
                                     }`}
                                 >
                                     <span
                                         className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
-                                        style={{ backgroundColor: color.hexCode }}
+                                        style={{ backgroundColor: color.hexCode || "#000000" }}
                                     />
                                     <span>{color.name}</span>
+                                    {isSelected && (
+                                        <svg className="w-3.5 h-3.5 text-white ml-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    )}
                                 </button>
                             );
                         })}
