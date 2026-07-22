@@ -16,11 +16,11 @@ export default function ProductImageGallery({ images, productName }: Props) {
     return (
         <div className="flex flex-col gap-3">
             {/* Main Featured Image */}
-            <div className="relative rounded-xl overflow-hidden bg-gray-100 aspect-[3/4] border border-gray-200 shadow-sm group">
+            <div className="relative rounded-xl overflow-hidden bg-gray-50 border border-gray-200 shadow-sm group flex items-center justify-center min-h-[360px] max-h-[560px] p-2">
                 <img
                     src={currentImage}
                     alt={productName}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                    className="w-full h-full max-h-[540px] object-contain transition-transform duration-300 group-hover:scale-[1.01]"
                 />
 
                 {/* Zoom / Lightbox Trigger Button */}
@@ -63,7 +63,7 @@ export default function ProductImageGallery({ images, productName }: Props) {
                                 <img
                                     src={img}
                                     alt={`${productName} thumbnail ${idx + 1}`}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain p-0.5 bg-gray-50"
                                 />
                             </button>
                         );

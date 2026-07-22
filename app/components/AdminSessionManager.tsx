@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-// Default inactivity timeout of 15 minutes
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+// Inactivity timeout set to 24 hours
+const INACTIVITY_TIMEOUT = 24 * 60 * 60 * 1000;
 const HEARTBEAT_INTERVAL = 20 * 1000; // 60 seconds
 const STALE_TAB_TIMEOUT = 360 * 1000; // 360 seconds to consider a tab dead
 
