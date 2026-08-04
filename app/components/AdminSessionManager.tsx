@@ -15,10 +15,9 @@ export default function AdminSessionManager() {
     // Clear logged out flag since we are currently mounting the admin layout (authenticated)
     localStorage.removeItem("admin_logged_out");
 
-    // Set initial activity
-    if (!localStorage.getItem("admin_last_activity")) {
-      localStorage.setItem("admin_last_activity", Date.now().toString());
-    }
+    // Always reset activity timestamp on mount so a stale value from a
+    // previous session doesn't cause an immediate logout on next login.
+    localStorage.setItem("admin_last_activity", Date.now().toString());
 
     // Update last activity on interaction
     const updateActivity = () => {
