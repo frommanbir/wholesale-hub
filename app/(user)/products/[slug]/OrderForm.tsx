@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { placeOrder } from "../../../actions/order";
+import { compressImage } from "@/app/lib/compressImage";
 
 type Color = { id: number; name: string; hexCode: string };
 type Size = { id: number; name: string };
@@ -137,7 +138,7 @@ export default function OrderForm({
     }
 
     // Step 3 File Upload
-    function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -146,67 +147,80 @@ export default function OrderForm({
         setUploadProgress(0);
         setUploadTimeRemaining(null);
 
-        const formData = new FormData();
-        formData.append("file", file);
+        try {
+            // Compress image on client-side before sending to server
+            const compressedFile = await compressImage(file);
 
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/api/upload");
+            const formData = new FormData();
+            formData.append("file", compressedFile);
 
-        const startTime = Date.now();
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "/api/upload");
 
-        // Track upload progress
-        xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable && event.total > 0) {
-                const percentComplete = Math.round((event.loaded / event.total) * 100);
-                setUploadProgress(percentComplete);
+            const startTime = Date.now();
 
-                const elapsedMs = Date.now() - startTime;
-                if (elapsedMs > 500 && event.loaded > 0) {
-                    const speedBytesPerMs = event.loaded / elapsedMs;
-                    const remainingBytes = event.total - event.loaded;
-                    const remainingMs = remainingBytes / speedBytesPerMs;
-                    const remainingSec = Math.ceil(remainingMs / 1000);
-                    setUploadTimeRemaining(remainingSec);
-                } else {
-                    setUploadTimeRemaining(null);
-                }
-            }
-        };
+            // Track upload progress
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && event.total > 0) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    setUploadProgress(percentComplete);
 
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    if (data.url) {
-                        setPaymentProofUrl(data.url);
+                    const elapsedMs = Date.now() - startTime;
+                    if (elapsedMs > 500 && event.loaded > 0) {
+                        const speedBytesPerMs = event.loaded / elapsedMs;
+                        const remainingBytes = event.total - event.loaded;
+                        const remainingMs = remainingBytes / speedBytesPerMs;
+                        const remainingSec = Math.ceil(remainingMs / 1000);
+                        setUploadTimeRemaining(remainingSec);
                     } else {
-                        setUploadError(data.error || "Upload failed. Please try again.");
+                        setUploadTimeRemaining(null);
                     }
-                } catch (err) {
-                    setUploadError("Upload failed. Invalid response.");
                 }
-            } else {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    setUploadError(data.error || "Upload failed. Please try again.");
-                } catch (err) {
-                    setUploadError("Upload failed. Please try again.");
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data.url) {
+                            setPaymentProofUrl(data.url);
+                        } else {
+                            setUploadError(data.error || "Upload failed. Please try again.");
+                        }
+                    } catch (err) {
+                        setUploadError("Upload failed. Invalid response from server.");
+                    }
+                } else if (xhr.status === 413) {
+                    setUploadError("File is too large for the web server limit. Please upload a smaller image.");
+                } else {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        setUploadError(data.error || `Upload failed (Server HTTP ${xhr.status}).`);
+                    } catch (err) {
+                        setUploadError(`Upload failed (Server HTTP ${xhr.status}). Please try again.`);
+                    }
                 }
-            }
+                setUploadingFile(false);
+                setUploadProgress(0);
+                setUploadTimeRemaining(null);
+            };
+
+            xhr.onerror = () => {
+                setUploadError("Network error during file upload. Please check connection and try again.");
+                setUploadingFile(false);
+                setUploadProgress(0);
+                setUploadTimeRemaining(null);
+            };
+
+            xhr.send(formData);
+        } catch (err) {
+            setUploadError("Failed to process image before upload.");
             setUploadingFile(false);
             setUploadProgress(0);
             setUploadTimeRemaining(null);
-        };
-
-        xhr.onerror = () => {
-            setUploadError("Network error. Please try again.");
-            setUploadingFile(false);
-            setUploadProgress(0);
-            setUploadTimeRemaining(null);
-        };
-
-        xhr.send(formData);
+        }
     }
+
 
     // Final Order Creation
     async function handlePlaceOrder() {

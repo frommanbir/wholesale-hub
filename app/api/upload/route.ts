@@ -50,8 +50,23 @@ export async function POST(req: NextRequest) {
         await writeFile(filePath, optimizedBuffer);
 
         return NextResponse.json({ url: `/uploads/${safeName}` });
-    } catch (err) {
-        console.error("Upload error:", err);
-        return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    } catch (err: unknown) {
+        const errorDetails = err instanceof Error ? err.message : String(err);
+        console.error("Upload error details:", errorDetails, err);
+        
+        let userErrorMessage = "Upload failed on server.";
+        if (errorDetails.includes("EACCES") || errorDetails.includes("permission denied")) {
+            userErrorMessage = "Server permission error: cannot write file to disk.";
+        } else if (errorDetails.includes("EROFS")) {
+            userErrorMessage = "Server filesystem is read-only.";
+        } else if (errorDetails.includes("ENOSPC")) {
+            userErrorMessage = "Server disk space is full.";
+        }
+
+        return NextResponse.json(
+            { error: userErrorMessage, details: process.env.NODE_ENV !== "production" ? errorDetails : undefined },
+            { status: 500 }
+        );
     }
 }
+

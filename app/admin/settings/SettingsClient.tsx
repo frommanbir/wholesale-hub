@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { saveSettings, saveHomepageSettings } from "../../actions/settings";
+import { compressImage } from "@/app/lib/compressImage";
 
 type Setting = {
     id: number;
@@ -53,14 +54,20 @@ function ImagePicker({ label, currentUrl, onUploaded, onCleared, hint, previewCl
         if (file.size > 20 * 1024 * 1024) { setError("Max 20 MB."); return; }
 
         setUploading(true);
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        const data = await res.json();
-        setUploading(false);
+        try {
+            const compressed = await compressImage(file);
+            const fd = new FormData();
+            fd.append("file", compressed);
+            const res = await fetch("/api/upload", { method: "POST", body: fd });
+            const data = await res.json();
+            setUploading(false);
 
-        if (!res.ok || !data.url) { setError(data.error ?? "Upload failed."); return; }
-        onUploaded(data.url);
+            if (!res.ok || !data.url) { setError(data.error ?? "Upload failed."); return; }
+            onUploaded(data.url);
+        } catch (err) {
+            setUploading(false);
+            setError("Failed to compress image before upload.");
+        }
     }
 
     return (

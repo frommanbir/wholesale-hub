@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { createProduct, updateProduct } from "../../actions/product";
+import { compressImage } from "@/app/lib/compressImage";
 
 type Color = {
     id: number;
@@ -244,8 +245,9 @@ export default function ProductFormModal({ isOpen, onClose, onSaved, product, co
 
             for (const item of imagesList) {
                 if (item.file) {
+                    const compressed = await compressImage(item.file);
                     const fd = new FormData();
-                    fd.append("file", item.file);
+                    fd.append("file", compressed);
                     const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
                     const uploadData = await uploadRes.json();
 
