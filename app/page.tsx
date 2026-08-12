@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import ProductCard from "./components/ProductCard";
+import HomeCollections from "./components/HomeCollections";
 import { getProducts } from "./actions/product";
 import { getHomepageSettings } from "./actions/settings";
 
@@ -59,33 +59,7 @@ export default async function HomePage() {
             </section>
 
             {/* ── Our Collections ──────────────────────────────────── */}
-            <section id="collections" className="max-w-6xl mx-auto px-4 py-14 w-full scroll-mt-20">
-                <h2 className="text-2xl font-semibold text-center text-gray-900 mb-8">
-                    Our Collections
-                </h2>
-
-                {products.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products.map((product, i) => (
-                            <ProductCard
-                                key={product.id}
-                                name={product.name}
-                                slug={product.slug}
-                                image={product.image}
-                                price={product.price.toString()}
-                                discount={product.discount?.toString() ?? "0"}
-                                /* Stagger decorative ratings so cards don't all look identical */
-                                rating={i % 3 === 1 ? 5 : 4}
-                                reviewCount={100 + i * 10 + 2}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-center text-gray-400 py-20 text-sm">
-                        No products available yet.
-                    </p>
-                )}
-            </section>
+            <HomeCollections products={products} />
 
             {/* ── Features ─────────────────────────────────────────── */}
             <section className="bg-gray-50 py-14 mt-auto">
