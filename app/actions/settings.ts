@@ -18,6 +18,7 @@ export async function saveSettings(data: {
     phone?: string;
     address?: string;
     shippingCharge: number;
+    advancePayment: number;
     logo?: string;
     favicon?: string;
     facebook?: string;
@@ -35,6 +36,7 @@ export async function saveSettings(data: {
         phone: data.phone?.trim() || "",
         address: data.address?.trim() || "",
         shippingCharge: data.shippingCharge,
+        advancePayment: data.advancePayment,
         logo: toNull(data.logo),
         favicon: toNull(data.favicon),
         facebook: toNull(data.facebook),

@@ -10,6 +10,7 @@ type Setting = {
     phone: string;
     address: string;
     shippingCharge: unknown;
+    advancePayment?: unknown;
     logo?: string | null;
     favicon?: string | null;
     facebook?: string | null;
@@ -169,6 +170,7 @@ export default function SettingsClient({
         phone: settings?.phone ?? "",
         address: settings?.address ?? "",
         shippingCharge: String(settings?.shippingCharge ?? "0"),
+        advancePayment: String(settings?.advancePayment ?? "300"),
         logo: settings?.logo ?? "",
         favicon: settings?.favicon ?? "",
         facebook: settings?.facebook ?? "",
@@ -198,6 +200,7 @@ export default function SettingsClient({
         await saveSettings({
             ...siteForm,
             shippingCharge: parseFloat(siteForm.shippingCharge) || 0,
+            advancePayment: parseFloat(siteForm.advancePayment) || 0,
         });
         setSiteLoading(false);
         setSiteMsg("✓ Site settings saved!");
@@ -226,6 +229,7 @@ export default function SettingsClient({
                     {[
                         { label: "Site Name", key: "siteName", max: 100 },
                         { label: "Shipping Charge (Rs.)", key: "shippingCharge", type: "number" },
+                        { label: "Advance Payment Per Piece (Rs.)", key: "advancePayment", type: "number", hint: "default advance payment required per piece" },
                         { label: "WhatsApp Number", key: "whatsapp", max: 20, hint: "with country code, e.g. 97798xxxxxxxx" },
                         { label: "Facebook URL", key: "facebook", max: 255 },
                         { label: "Instagram URL", key: "instagram", max: 255 },

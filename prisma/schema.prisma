@@ -125,6 +125,7 @@ model Setting {
   phone          String
   address        String
   shippingCharge Decimal  @db.Decimal(10, 2) @default(0)
+  advancePayment Decimal  @db.Decimal(10, 2) @default(0)
   logo           String?
   favicon        String?
   facebook       String?

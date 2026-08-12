@@ -62,6 +62,7 @@ export default async function ProductDetailPage({ params }: Props) {
     const colors = product.productColors.map((pc) => pc.color);
     const sizes = product.productSizes.map((ps) => ps.size);
     const shippingCharge = Number(settings?.shippingCharge ?? 0);
+    const advancePayment = Number(settings?.advancePayment ?? 300);
     const qrImage = settings?.qrImage ?? null;
     const whatsappNumber = settings?.whatsapp ?? null;
 
@@ -124,6 +125,7 @@ export default async function ProductDetailPage({ params }: Props) {
                             productId={product.id}
                             price={Number(product.price) - Number(product.discount ?? 0)}
                             shippingCharge={shippingCharge}
+                            advancePayment={advancePayment}
                             colors={colors}
                             sizes={sizes}
                             qrImage={qrImage}

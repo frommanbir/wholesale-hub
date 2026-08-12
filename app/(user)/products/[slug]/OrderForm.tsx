@@ -10,6 +10,7 @@ type Props = {
     productId: number;
     price: number;
     shippingCharge: number;
+    advancePayment?: number;
     colors: Color[];
     sizes: Size[];
     qrImage: string | null;
@@ -22,6 +23,7 @@ export default function OrderForm({
     productId,
     price,
     shippingCharge,
+    advancePayment = 300,
     colors,
     sizes,
     qrImage,
@@ -45,7 +47,7 @@ export default function OrderForm({
     const [validationError, setValidationError] = useState<string | null>(null);
 
     // Step 2: Order Summary
-    const [advancePaidInput, setAdvancePaidInput] = useState<string>("300");
+    const [advancePaidInput, setAdvancePaidInput] = useState<string>(String(advancePayment));
 
     // Step 3: Payment Proof
     const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
@@ -61,13 +63,13 @@ export default function OrderForm({
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Auto-sync advance payment based on quantity (Rs 300 per piece)
+    // Auto-sync advance payment based on quantity (Rs advancePayment per piece)
     useEffect(() => {
         const subtotal = price * quantity;
         const total = subtotal + shippingCharge;
-        const defaultAdvance = Math.min(300 * quantity, total);
+        const defaultAdvance = Math.min(advancePayment * quantity, total);
         setAdvancePaidInput(defaultAdvance.toString());
-    }, [quantity, price, shippingCharge]);
+    }, [quantity, price, shippingCharge, advancePayment]);
 
     const subtotal = price * quantity;
     const total = subtotal + shippingCharge;
@@ -302,7 +304,7 @@ Please confirm my order. Thank you!`;
         setName("");
         setPhone("");
         setAddress("");
-        setAdvancePaidInput("300");
+        setAdvancePaidInput(String(advancePayment));
         setPaymentProofUrl(null);
         setOrderNumber(null);
         setValidationError(null);
@@ -541,7 +543,7 @@ Please confirm my order. Thank you!`;
                         <div className="border-t border-gray-100 pt-4 space-y-3">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                    Advance Payment (Minimum of Rs.300 Per Piece)
+                                    Advance Payment {advancePayment > 0 ? `(Minimum of Rs.${advancePayment} Per Piece)` : ""}
                                 </label>
                                 <div className="relative rounded-xl border border-gray-350 focus-within:ring-1 focus-within:ring-rose-500 focus-within:border-rose-500 overflow-hidden bg-white">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium select-none">
@@ -549,7 +551,7 @@ Please confirm my order. Thank you!`;
                                     </span>
                                     <input
                                         type="number"
-                                        min={Math.min(300 * quantity, total)}
+                                        min={Math.min(advancePayment * quantity, total)}
                                         max={total}
                                         placeholder="Enter advance amount"
                                         value={advancePaidInput}
@@ -564,15 +566,15 @@ Please confirm my order. Thank you!`;
                                             }
 
                                             const amount = Number(val);
-                                            const minRequired = Math.min(300 * quantity, total);
+                                            const minRequired = Math.min(advancePayment * quantity, total);
 
                                             if (amount > total) {
                                                 setValidationError(`Advance payment cannot exceed the total order amount of Rs. ${total}.`);
                                             } else if (amount > 0 && amount < minRequired) {
                                                 if (minRequired === total) {
-                                                    setValidationError(`Advance payment must be at least Rs. ${minRequired} (the full order amount, since the total is less than Rs. 300 per piece).`);
+                                                    setValidationError(`Advance payment must be at least Rs. ${minRequired} (the full order amount, since the total is less than Rs. ${advancePayment} per piece).`);
                                                 } else {
-                                                    setValidationError(`Advance payment must be at least Rs. ${minRequired} (${quantity} × Rs. 300).`);
+                                                    setValidationError(`Advance payment must be at least Rs. ${minRequired} (${quantity} × Rs. ${advancePayment}).`);
                                                 }
                                             } else {
                                                 setValidationError(null);
@@ -612,16 +614,16 @@ Please confirm my order. Thank you!`;
                                     type="button"
                                     onClick={() => {
                                         const amount = Number(advancePaidInput) || 0;
-                                        const minRequired = Math.min(300 * quantity, total);
+                                        const minRequired = Math.min(advancePayment * quantity, total);
                                         if (amount > total) {
                                             setValidationError(`Advance payment cannot exceed the total order amount of Rs. ${total}.`);
                                             return;
                                         }
                                         if (amount > 0 && amount < minRequired) {
                                             if (minRequired === total) {
-                                                setValidationError(`Advance payment must be at least Rs. ${minRequired} (the full order amount, since the total is less than Rs. 300 per piece).`);
+                                                setValidationError(`Advance payment must be at least Rs. ${minRequired} (the full order amount, since the total is less than Rs. ${advancePayment} per piece).`);
                                             } else {
-                                                setValidationError(`Advance payment must be at least Rs. ${minRequired} (${quantity} × Rs. 300).`);
+                                                setValidationError(`Advance payment must be at least Rs. ${minRequired} (${quantity} × Rs. ${advancePayment}).`);
                                             }
                                             return;
                                         }
