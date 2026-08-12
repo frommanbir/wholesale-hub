@@ -385,6 +385,65 @@ Please confirm my order. Thank you!`;
                 </div>
             )}
 
+            {/* Quantity Selector */}
+            <div>
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-900">Select Quantity</span>
+                    <span className="text-xs text-gray-500 font-medium">
+                        Subtotal: <strong className="text-gray-900 font-bold">Rs. {subtotal.toLocaleString()}</strong>
+                    </span>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                    {/* - / Input / + Controls */}
+                    <div className="flex items-center border border-gray-300 rounded-xl bg-white shadow-2xs overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                            className="w-10 h-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition text-lg font-bold cursor-pointer select-none"
+                            title="Decrease quantity"
+                        >
+                            −
+                        </button>
+                        <input
+                            type="number"
+                            min="1"
+                            value={quantity}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                setQuantity(isNaN(val) || val < 1 ? 1 : val);
+                            }}
+                            className="w-14 text-center text-sm font-bold text-gray-900 outline-none border-x border-gray-200 py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setQuantity(quantity + 1)}
+                            className="w-10 h-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition text-lg font-bold cursor-pointer select-none"
+                            title="Increase quantity"
+                        >
+                            +
+                        </button>
+                    </div>
+
+                    {/* Quick Preset Buttons */}
+                    {/* <div className="flex items-center gap-1.5 flex-wrap">
+                        {[1, 2, 5, 10, 20, 50].map((num) => (
+                            <button
+                                key={num}
+                                type="button"
+                                onClick={() => setQuantity(num)}
+                                className={`px-3 py-2 rounded-xl text-xs font-bold border transition cursor-pointer select-none ${
+                                    quantity === num
+                                        ? "border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-100"
+                                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+                                }`}
+                            >
+                                {num} Pcs
+                            </button>
+                        ))}
+                    </div> */}
+                </div>
+            </div>
+
             {/* ── Multi-Step Checkout Wizard Card ── */}
             <div className="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm max-w-lg w-full mx-auto">
                 {renderProgressBar()}
@@ -520,19 +579,28 @@ Please confirm my order. Thank you!`;
                         {/* Quantity Selector inside Summary */}
                         <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                             <span className="text-xs font-semibold text-gray-700">Change Quantity:</span>
-                            <div className="flex items-center border border-gray-250 rounded-lg bg-white shadow-2xs">
+                            <div className="flex items-center border border-gray-300 rounded-lg bg-white shadow-2xs overflow-hidden">
                                 <button
                                     type="button"
                                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    className="w-9 h-9 flex items-center justify-center text-gray-650 hover:bg-gray-50 transition text-base font-bold rounded-l-lg cursor-pointer"
+                                    className="w-9 h-9 flex items-center justify-center text-gray-650 hover:bg-gray-50 transition text-base font-bold cursor-pointer select-none"
                                 >
                                     −
                                 </button>
-                                <span className="w-9 text-center text-sm font-semibold text-gray-900">{quantity}</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={quantity}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        setQuantity(isNaN(val) || val < 1 ? 1 : val);
+                                    }}
+                                    className="w-12 text-center text-xs font-bold text-gray-900 outline-none border-x border-gray-200 py-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
                                 <button
                                     type="button"
                                     onClick={() => setQuantity(quantity + 1)}
-                                    className="w-9 h-9 flex items-center justify-center text-gray-650 hover:bg-gray-50 transition text-base font-bold rounded-r-lg cursor-pointer"
+                                    className="w-9 h-9 flex items-center justify-center text-gray-650 hover:bg-gray-50 transition text-base font-bold cursor-pointer select-none"
                                 >
                                     +
                                 </button>

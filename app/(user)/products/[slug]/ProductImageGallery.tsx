@@ -33,7 +33,7 @@ export default function ProductImageGallery({ images, productName }: Props) {
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
                     </svg>
-                    <span>Zoom & View Numbers</span>
+                    <span>Zoom</span>
                 </button>
 
                 {/* Image Count Badge */}
